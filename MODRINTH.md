@@ -12,11 +12,17 @@ Stops the "hit and run" — land a hit (or get hit) in PvP, and the target's
 escape tools go dark for a few seconds. No more boosting away on an elytra
 mid-fight or blinking out with a wind charge the instant a fight turns bad.
 
+## Future Extensions
+
+- (SCDE) Combat Disabled Effects
+- (SCCI) Combat Cooldown Items
+
 ## What gets disabled
 
 - **Firework rockets** — mainhand, offhand, and anywhere in your inventory
 - **Wind charges**
 - **Elytra** — the worn chestplate itself, not just rockets
+(Currently has issues)
 - **Any custom item you choose, with rules** — got a weapon, tool, or
   enchant combo that's warping your server's combat balance? Add it to
   your own list, optionally requiring a specific enchantment before it
@@ -36,7 +42,7 @@ deleted or lost — everything reverts automatically the instant combat ends.
 - **Proximity tagging** — stay locked while an enemy is nearby, even without
   a fresh hit
 - **Teams** — request/confirm teaming up in chat, or assign manually;
-  teammates never lock each other out
+  teammates never (optionally) lock each other out
 - **Admin and Creative-mode exemptions**
 - **One-shot detection** with configurable strictness, so instant kills read
   correctly even in rapid succession
