@@ -1,0 +1,10 @@
+{
+  "criteria": {
+    "req": {
+      "trigger": "minecraft:placed_block"
+    }
+  },
+  "rewards": {
+    "function": "scdi:on_placed_block"
+  }
+}

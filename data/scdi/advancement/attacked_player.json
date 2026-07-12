@@ -1,0 +1,21 @@
+{
+  "criteria": {
+    "req": {
+      "trigger": "minecraft:player_hurt_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "entity_type": "minecraft:player"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "rewards": {
+    "function": "scdi:on_attacked_player"
+  }
+}

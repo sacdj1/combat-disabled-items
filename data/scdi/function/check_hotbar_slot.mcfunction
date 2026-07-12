@@ -1,0 +1,4 @@
+# called with {slot:N,slot_arg:"..."} - only proceed if that slot actually
+# holds an un-nulled firework rocket (or, if enabled, an un-nulled wind charge)
+$execute if data storage scdi:config {disable_firework_rocket:1b} if data entity @s Inventory[{Slot:$(slot)b,id:"minecraft:firework_rocket"}] unless data entity @s Inventory[{Slot:$(slot)b,components:{"minecraft:custom_data":{scdi:{null:1b}}}}] run function scdi:nullify_hotbar_slot {slot:$(slot),slot_arg:"$(slot_arg)",orig:"minecraft:firework_rocket"}
+$execute if data storage scdi:config {disable_wind_charge:1b} if data entity @s Inventory[{Slot:$(slot)b,id:"minecraft:wind_charge"}] unless data entity @s Inventory[{Slot:$(slot)b,components:{"minecraft:custom_data":{scdi:{null:1b}}}}] run function scdi:nullify_hotbar_slot {slot:$(slot),slot_arg:"$(slot_arg)",orig:"minecraft:wind_charge"}

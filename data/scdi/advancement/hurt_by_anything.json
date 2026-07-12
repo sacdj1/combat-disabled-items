@@ -1,0 +1,24 @@
+{
+  "criteria": {
+    "req": {
+      "trigger": "minecraft:entity_hurt_player",
+      "conditions": {
+        "damage": {
+          "source_entity": {
+            "distance": {
+              "absolute": {"min": 0.01}
+            }
+          },
+          "type": {
+            "tags": [
+              {"id": "scdi:self_attributable", "expected": false}
+            ]
+          }
+        }
+      }
+    }
+  },
+  "rewards": {
+    "function": "scdi:on_hurt_by_anything"
+  }
+}

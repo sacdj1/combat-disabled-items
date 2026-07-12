@@ -1,0 +1,6 @@
+{
+  "pack": {
+    "pack_format": 81,
+    "description": "Combat Disabled Items\nDisables firework rockets/wind charges (elytra boosting, self-launch) for 10s after being hit by another player"
+  }
+}

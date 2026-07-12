@@ -1,0 +1,1 @@
+tellraw @s ["",{"text":"You are currently ","color":"white"},{"text":"IN COMBAT","color":"red","bold":true},{"text":" - about ","color":"white"},{"score":{"name":"@s","objective":"scdi_sec"}},{"text":"s remaining.","color":"white"}]

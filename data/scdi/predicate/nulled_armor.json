@@ -1,0 +1,13 @@
+{
+  "condition": "minecraft:entity_properties",
+  "entity": "this",
+  "predicate": {
+    "equipment": {
+      "chest": {
+        "components": {
+          "minecraft:custom_data": "{scdi:{null:1b,orig:\"minecraft:elytra\"}}"
+        }
+      }
+    }
+  }
+}
