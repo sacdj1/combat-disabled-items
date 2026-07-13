@@ -28,15 +28,15 @@ execute if score @s scdi_dummy_invincible matches 1.. if score $dummy_display_hp
 execute if score @s scdi_dummy_invincible matches 1.. store result storage scdi:tmp9 hp int 1 run scoreboard players get $dummy_display_hp scdi_const
 execute if score @s scdi_dummy_invincible matches 1.. run data modify storage scdi:tmp9 max set value 20
 
-# mortal: a straight proportional scale of the whole pool onto 0-20
-# (raw_health * 20 / max_health) instead - a floor-relative approach like
-# invincible's doesn't fit here, since a mortal dummy has one single
-# bottom-anchored death threshold (dummy_death_threshold, default 20 raw)
-# rather than a repeating top-down segment, so it needs to read
-# meaningfully across the ENTIRE health range, not just the last stretch.
-execute unless score @s scdi_dummy_invincible matches 1.. store result score $dummy_display_hp scdi_const run data get entity @s Health 1
-execute unless score @s scdi_dummy_invincible matches 1.. store result score $dummy_display_max scdi_const run attribute @s minecraft:max_health get 1
-execute unless score @s scdi_dummy_invincible matches 1.. run scoreboard players operation $dummy_display_hp scdi_const *= $twenty scdi_const
-execute unless score @s scdi_dummy_invincible matches 1.. run scoreboard players operation $dummy_display_hp scdi_const /= $dummy_display_max scdi_const
+# mortal: shows scdi_dummy_sim_hp directly (converted from tenths back to
+# whole units) instead of anything derived from the big buffer pool - the
+# buffer pool is purely a safety margin now (see load.mcfunction's
+# dummy_one_shot_damage comment), sim_hp is what ACTUALLY decides when a
+# mortal dummy dies, so that's the only thing worth showing here. a
+# proportional scale of the buffer pool would be actively misleading -
+# it could read as nearly full while sim_hp is one hit from death.
+execute unless score @s scdi_dummy_invincible matches 1.. store result score $dummy_display_hp scdi_const run scoreboard players get @s scdi_dummy_sim_hp
+execute unless score @s scdi_dummy_invincible matches 1.. if score $dummy_display_hp scdi_const matches ..-1 run scoreboard players set $dummy_display_hp scdi_const 0
+execute unless score @s scdi_dummy_invincible matches 1.. run scoreboard players operation $dummy_display_hp scdi_const /= $ten scdi_const
 execute unless score @s scdi_dummy_invincible matches 1.. store result storage scdi:tmp9 hp int 1 run scoreboard players get $dummy_display_hp scdi_const
-execute unless score @s scdi_dummy_invincible matches 1.. run data modify storage scdi:tmp9 max set value 20
+execute unless score @s scdi_dummy_invincible matches 1.. store result storage scdi:tmp9 max int 1 run data get storage scdi:config dummy_one_shot_damage 1

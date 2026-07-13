@@ -2,6 +2,11 @@ execute unless data storage scdi:config {allow_dummy_trigger:1b} run tellraw @s 
 execute at @s if data storage scdi:config {allow_dummy_trigger:1b} unless entity @e[type=minecraft:mannequin,tag=scdi_dummy,distance=..10] run tellraw @s {"text":"No test dummy within 10 blocks of you.","color":"red"}
 execute at @s if data storage scdi:config {allow_dummy_trigger:1b} as @e[type=minecraft:mannequin,tag=scdi_dummy,distance=..10,sort=nearest,limit=1] store result entity @s Health float 1 run attribute @s minecraft:max_health get
 execute at @s if data storage scdi:config {allow_dummy_trigger:1b} as @e[type=minecraft:mannequin,tag=scdi_dummy,distance=..10,sort=nearest,limit=1] run scoreboard players set @s scdi_dummy_hit 0
+# also tops the SIMULATED player-sized pool back up to full - see
+# load.mcfunction's dummy_one_shot_damage comment - otherwise a mortal
+# dummy healed to full raw health could still die on the very next hit if
+# sim_hp was left depleted from before this heal.
+execute at @s if data storage scdi:config {allow_dummy_trigger:1b} as @e[type=minecraft:mannequin,tag=scdi_dummy,distance=..10,sort=nearest,limit=1] store result score @s scdi_dummy_sim_hp run data get storage scdi:config dummy_one_shot_damage 10
 # an invincible dummy's floor (apply_dummy_invincible_segment_topoff.mcfunction)
 # has to reset back to max-20 too, not just raw Health - otherwise healing
 # to full while the floor is still partway down from earlier segment cheats

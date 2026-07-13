@@ -18,14 +18,17 @@ scoreboard players operation @s scdi_dummy_dmg = @s scdi_dummy_health_fine
 execute store result score @s scdi_dummy_health_fine run data get entity @s Health 10
 scoreboard players operation @s scdi_dummy_dmg -= @s scdi_dummy_health_fine
 
-# scale 1, not 100 - dummy_death_threshold is in raw HP units (default 2 =
-# 2 health), unlike the *100-scaled scdi_health reads elsewhere in this
-# pack (check_one_shot.mcfunction, on_hurt_by_player_retag.mcfunction) that
-# only ever compare against 0 (scale-invariant). this was a real bug: with
-# scale 100, "matches ..2" was checking Health <= 0.02, not Health <= 2 -
-# meaning the threshold never actually changed anything from the old
-# exact-zero check no matter what you set it to.
+# scale 1, not 100 - unlike the *100-scaled scdi_health reads elsewhere in
+# this pack (check_one_shot.mcfunction, on_hurt_by_player_retag.mcfunction)
+# that only ever compare against 0 (scale-invariant), this one also feeds
+# the raw-pool backstop check in apply_check_dummy_hit2.mcfunction.
 execute store result score @s scdi_health run data get entity @s Health 1
+
+# drains the SIMULATED player-sized health pool by the same amount as the
+# real damage dealt this hit - see load.mcfunction's dummy_one_shot_damage
+# comment for why this (not the big buffer pool) is a mortal dummy's real
+# death gate.
+scoreboard players operation @s scdi_dummy_sim_hp -= @s scdi_dummy_dmg
 
 # DPS tracking (also in tenths, matching scdi_dummy_dmg): a fresh encounter
 # (scdi_dummy_hit unset - same "first hit" signal already used for one-shot
@@ -50,9 +53,4 @@ execute if data storage scdi:config {dummy_damage_numbers:1b} if score @s scdi_d
 execute if data storage scdi:config {dummy_damage_numbers:1b} if score @s scdi_dummy_dmg matches 1.. run scoreboard players operation $dummy_dmg_tenths scdi_const %= $ten scdi_const
 execute if data storage scdi:config {dummy_damage_numbers:1b} if score @s scdi_dummy_dmg matches 1.. run function scdi:spawn_dummy_damage_display
 
-# one_shot_dmg needs the *10 (tenths) scale to compare directly against
-# scdi_dummy_dmg above - "data get ... 10" multiplies the source value by
-# 10 as part of the read, same trick scdi_dummy_health_fine uses.
-execute store result storage scdi:tmp18 threshold int 1 run data get storage scdi:config dummy_death_threshold 1
-execute store result storage scdi:tmp18 one_shot_dmg int 1 run data get storage scdi:config dummy_one_shot_damage 10
-function scdi:apply_check_dummy_hit2 with storage scdi:tmp18
+function scdi:apply_check_dummy_hit2

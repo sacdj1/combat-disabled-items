@@ -20,3 +20,13 @@ execute store result entity @s Health float 1 run scoreboard players get $dummy_
 # DPS window instead of carrying on from damage dealt ages ago (see
 # apply_check_dummy_hit.mcfunction).
 execute if score $dummy_regen_cur scdi_const >= $dummy_regen_max scdi_const run scoreboard players set @s scdi_dummy_hit 0
+
+# also regens the SIMULATED player-sized pool (tenths scale - see
+# load.mcfunction's dummy_one_shot_damage comment) by the same real-HP
+# amount, capped at its own max - kept independent of the raw-health regen
+# above since they're on different scales with different caps.
+execute store result score $dummy_regen_sim_max scdi_const run data get storage scdi:config dummy_one_shot_damage 10
+$scoreboard players set $dummy_regen_sim_amount scdi_const $(amount)
+scoreboard players operation $dummy_regen_sim_amount scdi_const *= $ten scdi_const
+scoreboard players operation @s scdi_dummy_sim_hp += $dummy_regen_sim_amount scdi_const
+execute if score @s scdi_dummy_sim_hp > $dummy_regen_sim_max scdi_const run scoreboard players operation @s scdi_dummy_sim_hp = $dummy_regen_sim_max scdi_const

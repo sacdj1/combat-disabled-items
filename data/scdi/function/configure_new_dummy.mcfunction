@@ -36,11 +36,11 @@ execute if data storage scdi:config {dummy_show_health:1b} run function scdi:spa
 $attribute @s minecraft:max_health base set $(dummy_max_health)
 execute store result entity @s Health float 1 run attribute @s minecraft:max_health get
 
-# a mortal dummy actually dies once it's down to its last dummy_death_threshold
-# raw health (default 20 - a normal player's worth) rather than needing to
-# reach literal 0 of the large pool above - see apply_check_dummy_hit2.mcfunction.
-# the display shows this relative to that same 20-point stretch, not the
-# raw pool number - see apply_compute_dummy_display_health.mcfunction.
+# a mortal dummy's REAL death gate is a separate simulated player-sized
+# health pool (scdi_dummy_sim_hp, tenths scale), not the big buffer above -
+# see load.mcfunction's dummy_one_shot_damage comment and
+# apply_check_dummy_hit2.mcfunction for why. starts full.
+execute store result score @s scdi_dummy_sim_hp run data get storage scdi:config dummy_one_shot_damage 10
 
 # initializes scdi_health/scdi_dummy_health_fine to the dummy's actual full
 # health, so the first real hit's damage-number computation

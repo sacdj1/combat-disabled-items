@@ -66,6 +66,9 @@ data remove storage scdi:config disable_wind_charge
 data remove storage scdi:config disguise_glint
 data remove storage scdi:config disguise_item
 data remove storage scdi:config disguise_model
+data remove storage scdi:config disguise_armor_model
+data remove storage scdi:config disguise_armor_flash
+data remove storage scdi:config disguise_armor_flash_interval
 data remove storage scdi:config disguise_name
 data remove storage scdi:config disguise_name_bold
 data remove storage scdi:config disguise_name_color
@@ -73,12 +76,13 @@ data remove storage scdi:config disguise_name_italic
 data remove storage scdi:config disguise_targets
 data remove storage scdi:config dummy_announce_one_shot
 data remove storage scdi:config dummy_one_shot_ignore_tag
+data remove storage scdi:config dummy_announce_time_to_kill
+data remove storage scdi:config dummy_dps_window
 data remove storage scdi:config dummy_announce_cheated_death
 data remove storage scdi:config dummy_look_at_player
 data remove storage scdi:config dummy_look_range
 data remove storage scdi:config dummy_pickup_items
 data remove storage scdi:config dummy_damage_numbers
-data remove storage scdi:config dummy_death_threshold
 data remove storage scdi:config dummy_one_shot_damage
 data remove storage scdi:config dummy_max_health
 data remove storage scdi:config dummy_immobile
@@ -112,6 +116,7 @@ data remove storage scdi:config tag_attacker
 data remove storage scdi:config tag_victim
 data remove storage scdi:config team_tag_attacker
 data remove storage scdi:config team_tag_victim
+data remove storage scdi:config team_tag_proximity
 data remove storage scdi:config no_tag_on_one_shot_kill
 data remove storage scdi:config no_tag_victim_on_one_shot
 data remove storage scdi:config one_shot_ignore_tag
@@ -144,11 +149,16 @@ scoreboard objectives remove scdi_dummy_last_hit
 scoreboard objectives remove scdi_dummy_id
 scoreboard objectives remove scdi_dummy_dmg
 scoreboard objectives remove scdi_dummy_health_fine
+scoreboard objectives remove scdi_dummy_sim_hp
 scoreboard objectives remove scdi_dummy_total_dmg
 scoreboard objectives remove scdi_dummy_encounter_start_tick
 scoreboard objectives remove scdi_dummy_invincible
 scoreboard objectives remove scdi_dummy_invincible_floor
 scoreboard objectives remove scdi_dummy_pickup_cooldown_until
+scoreboard objectives remove scdi_dummy_pinned
+scoreboard objectives remove scdi_dummy_pin_x
+scoreboard objectives remove scdi_dummy_pin_y
+scoreboard objectives remove scdi_dummy_pin_z
 scoreboard objectives remove scdi_display_spawn_tick
 scoreboard objectives remove scdi_item_dur
 scoreboard objectives remove scdi_item_sec
@@ -159,5 +169,6 @@ scoreboard objectives remove ScdiDummyMenu
 scoreboard objectives remove ScdiTeamRequest
 scoreboard objectives remove ScdiTeamConfirm
 scoreboard objectives remove ScdiTeamReset
+scoreboard objectives remove ScdiDummyAction
 
 tellraw @a ["",{"text":"[SCDI] ","color":"red"},{"text":"Combat Disabled Items has been uninstalled - all scoreboards, storage, and world entities it created have been removed. Delete the datapack from your world's datapacks folder now (this function can't remove itself).","color":"gray"}]

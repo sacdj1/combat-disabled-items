@@ -1,0 +1,4 @@
+execute unless entity @s[level=2..] run tellraw @s {"text":"You need to be an operator to use this.","color":"red"}
+execute if entity @s[level=2..] run data modify storage scdi:config team_tag_proximity set value 1b
+execute if entity @s[level=2..] run tellraw @s {"text":"Warning: with proximity tagging also on, teammates now lock each other's items just by standing close - there's not much reason to be on a team anymore while this is enabled.","color":"gold"}
+execute if entity @s[level=2..] run function scdi:menu_detection_show

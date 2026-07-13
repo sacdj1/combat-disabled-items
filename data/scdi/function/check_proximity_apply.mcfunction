@@ -18,9 +18,20 @@
 # "how many entities match" - "matches $(myteam)" IS valid since myteam is a
 # literal number by the time the macro substitutes it in, unlike a live
 # cross-entity comparison), and only tags if that count is 1 or more.
+#
+# team_tag_proximity (default off, see load.mcfunction) switches between two
+# entirely separate branches below rather than just tweaking the exemption:
+# when off (default, original hardcoded behavior), teammates never count
+# toward proximity tagging at all, no matter how close they stand. when on,
+# team membership is ignored completely for this check - ANY nearby player
+# or dummy triggers it, teammate or not (menu/team_tag_proximity_on.mcfunction
+# warns about this when it's turned on - being teamed up stops meaning much
+# once proximity tagging no longer respects it).
 scoreboard players set $prox_diff scdi_const 0
-$execute unless score @s scdi_team matches 1.. if entity @a[distance=0.01..$(dist)] run function scdi:on_proximity_tag
-$execute unless score @s scdi_team matches 1.. if entity @e[type=minecraft:mannequin,tag=scdi_dummy,distance=0.01..$(dist)] run function scdi:on_proximity_tag
-$execute if score @s scdi_team matches 1.. as @a[distance=0.01..$(dist)] unless score @s scdi_team matches $(myteam) run scoreboard players add $prox_diff scdi_const 1
-$execute if score @s scdi_team matches 1.. as @e[type=minecraft:mannequin,tag=scdi_dummy,distance=0.01..$(dist)] unless score @s scdi_team matches $(myteam) run scoreboard players add $prox_diff scdi_const 1
-execute if score $prox_diff scdi_const matches 1.. run function scdi:on_proximity_tag
+$execute if data storage scdi:config {team_tag_proximity:1b} if entity @a[distance=0.01..$(dist)] run function scdi:on_proximity_tag
+$execute if data storage scdi:config {team_tag_proximity:1b} if entity @e[type=minecraft:mannequin,tag=scdi_dummy,distance=0.01..$(dist)] run function scdi:on_proximity_tag
+$execute unless data storage scdi:config {team_tag_proximity:1b} unless score @s scdi_team matches 1.. if entity @a[distance=0.01..$(dist)] run function scdi:on_proximity_tag
+$execute unless data storage scdi:config {team_tag_proximity:1b} unless score @s scdi_team matches 1.. if entity @e[type=minecraft:mannequin,tag=scdi_dummy,distance=0.01..$(dist)] run function scdi:on_proximity_tag
+$execute unless data storage scdi:config {team_tag_proximity:1b} if score @s scdi_team matches 1.. as @a[distance=0.01..$(dist)] unless score @s scdi_team matches $(myteam) run scoreboard players add $prox_diff scdi_const 1
+$execute unless data storage scdi:config {team_tag_proximity:1b} if score @s scdi_team matches 1.. as @e[type=minecraft:mannequin,tag=scdi_dummy,distance=0.01..$(dist)] unless score @s scdi_team matches $(myteam) run scoreboard players add $prox_diff scdi_const 1
+execute unless data storage scdi:config {team_tag_proximity:1b} if score $prox_diff scdi_const matches 1.. run function scdi:on_proximity_tag

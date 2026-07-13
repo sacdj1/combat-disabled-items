@@ -13,9 +13,22 @@ execute store result storage scdi:tmp9 id int 1 run scoreboard players get @s sc
 # converting to real HP/sec needs *20 (ticks -> seconds) /10 (undo the
 # tenths scale) = *2, not *20 - using $twenty here was a real bug that made
 # every DPS reading exactly 10x too high.
+#
+# elapsed is floored to dummy_dps_window ticks (default 20 = 1 second, see
+# load.mcfunction/menu -> Misc), not just clamped above 0 -
+# scdi_dummy_encounter_start_tick gets set to THIS SAME tick on a fresh
+# encounter's first hit (see apply_check_dummy_hit.mcfunction), so without
+# this floor, that first hit's damage was being divided by as little as 1
+# tick and extrapolated into a wildly inflated instantaneous rate (a single
+# 1.5-damage hit reading as "30 DPS") instead of a real sustained average -
+# technically correct math, but meaningless and confusing this early in an
+# encounter, since the dummy obviously isn't dying at that rate. read fresh
+# from storage every tick (not a fixed scratch constant) so changing the
+# setting takes effect immediately, no reload needed.
+execute store result score $dps_window scdi_const run data get storage scdi:config dummy_dps_window 1
 scoreboard players operation $dps_elapsed scdi_const = $ticks scdi_const
 scoreboard players operation $dps_elapsed scdi_const -= @s scdi_dummy_encounter_start_tick
-execute if score $dps_elapsed scdi_const matches ..0 run scoreboard players set $dps_elapsed scdi_const 1
+execute if score $dps_elapsed scdi_const < $dps_window scdi_const run scoreboard players operation $dps_elapsed scdi_const = $dps_window scdi_const
 scoreboard players operation $dps_num scdi_const = @s scdi_dummy_total_dmg
 scoreboard players operation $dps_num scdi_const *= $two scdi_const
 scoreboard players operation $dps_num scdi_const /= $dps_elapsed scdi_const

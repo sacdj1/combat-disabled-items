@@ -79,6 +79,7 @@ scoreboard players enable @a ScdiDummyMenu
 scoreboard players enable @a ScdiTeamRequest
 scoreboard players enable @a ScdiTeamConfirm
 scoreboard players enable @a ScdiTeamReset
+scoreboard players enable @a ScdiDummyAction
 execute as @a[scores={ScdiHelp=1..}] at @s run function scdi:help
 execute as @a[scores={ScdiHelp=1..}] run scoreboard players set @s ScdiHelp 0
 execute as @a[scores={ScdiMenu=1..}] at @s run function scdi:menu
@@ -93,6 +94,12 @@ execute as @a[scores={ScdiTeamConfirm=1..}] at @s run function scdi:team_confirm
 execute as @a[scores={ScdiTeamConfirm=1..}] run scoreboard players set @s ScdiTeamConfirm 0
 execute as @a[scores={ScdiTeamReset=1..}] at @s run function scdi:team_reset_trigger
 execute as @a[scores={ScdiTeamReset=1..}] run scoreboard players set @s ScdiTeamReset 0
+# see load.mcfunction's ScdiDummyAction comment - dispatches whichever
+# dummy-menu button a player just clicked (set as a specific numeric
+# value, not just enabled to 1) via the server's own full permissions,
+# since the player themselves can't run /function directly.
+execute as @a[scores={ScdiDummyAction=1..}] at @s run function scdi:dummy_menu_action_dispatch
+execute as @a[scores={ScdiDummyAction=1..}] run scoreboard players set @s ScdiDummyAction 0
 
 # expiry sweep for pending team requests (see apply_team_request.mcfunction/
 # load.mcfunction: team_request_timeout) - every tick, cheap since
@@ -140,3 +147,10 @@ execute if score $dummy_regen_mod scdi_const matches 0 if data storage scdi:conf
 # move (knockback, unless dummy_immobile is on) instead of assuming it's
 # always stationary.
 function scdi:dummy_display_follow_tick
+
+# Misc: pinned dummies (per-dummy toggle, see menu/dummy_menu_pin_on.mcfunction/
+# _off.mcfunction - no global default) get teleported back to their exact
+# captured position every tick, unconditionally - immune to pistons,
+# water/lava currents, or anything else that would displace them, unlike
+# dummy_immobile above which only dampens combat knockback.
+execute as @e[type=minecraft:mannequin,tag=scdi_dummy,scores={scdi_dummy_pinned=1..}] at @s run function scdi:apply_dummy_pin_tick

@@ -1,4 +1,5 @@
 function scdi:nullify_check
+function scdi:check_disguise_armor_flash
 
 # remaining seconds = ceil((duration_ms - elapsed_ms) / 1000), for the
 # actionbar display only. plain (truncating) integer division would show 29

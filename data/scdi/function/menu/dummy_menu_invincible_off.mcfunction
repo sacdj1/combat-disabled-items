@@ -11,5 +11,12 @@ execute at @s if data storage scdi:config {allow_dummy_trigger:1b} as @e[type=mi
 execute at @s if data storage scdi:config {allow_dummy_trigger:1b} as @e[type=minecraft:mannequin,tag=scdi_dummy,distance=..10,sort=nearest,limit=1] run scoreboard players reset @s scdi_dummy_invincible_floor
 execute at @s if data storage scdi:config {allow_dummy_trigger:1b} as @e[type=minecraft:mannequin,tag=scdi_dummy,distance=..10,sort=nearest,limit=1] at @s run attribute @s minecraft:max_health base set 20
 execute at @s if data storage scdi:config {allow_dummy_trigger:1b} as @e[type=minecraft:mannequin,tag=scdi_dummy,distance=..10,sort=nearest,limit=1] at @s store result entity @s Health float 1 run attribute @s minecraft:max_health get
+# also resets the SIMULATED health pool (scdi_dummy_sim_hp - see
+# load.mcfunction's dummy_one_shot_damage comment) back to full - while
+# invincible it just kept draining deeper negative with no meaningful
+# reset, so without this a dummy just switched back to mortal would insta-
+# die on literally the next hit, however light, since sim_hp was already
+# deep in the negatives.
+execute at @s if data storage scdi:config {allow_dummy_trigger:1b} as @e[type=minecraft:mannequin,tag=scdi_dummy,distance=..10,sort=nearest,limit=1] store result score @s scdi_dummy_sim_hp run data get storage scdi:config dummy_one_shot_damage 10
 execute at @s if data storage scdi:config {allow_dummy_trigger:1b} if entity @e[type=minecraft:mannequin,tag=scdi_dummy,distance=..10] run tellraw @s {"text":"(✔) This dummy is mortal again.","color":"green"}
 execute at @s if data storage scdi:config {allow_dummy_trigger:1b} if entity @e[type=minecraft:mannequin,tag=scdi_dummy,distance=..10] run function scdi:dummy_menu_show

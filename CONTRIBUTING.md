@@ -53,6 +53,15 @@ dummy spawning entirely for a while (the very first command in the
 function - tagging the entity `scdi_dummy` - never ran, so every
 tag-based selector downstream just silently found nothing).
 
+**A line starting with `$` that has no `$(...)` variable anywhere on it is
+a HARD function-load error ("No variables in macro"), not a silent no-op.**
+Unlike the missing-`with` case above, this one is loud - the whole
+function fails to load and every reload logs it - but it's easy to
+introduce by copy-pasting a macro line as a template and forgetting to
+either add a `$(...)` or remove the leading `$`. `build.py` checks for
+this too. This exact typo took down `configure_new_dummy.mcfunction`
+entirely for a while (dummy spawning appeared to "just stop working").
+
 **`/data modify entity <player>` cannot touch inventory/equipment.**
 Mojang intentionally locked this down since 1.17 as an anti-duplication
 fix (MC-123307). `/item modify` / `/item replace` are the sanctioned
@@ -61,6 +70,31 @@ been observed failing specifically for `armor.chest` on a real player in
 testing; a temporary armor-stand relay
 (`/item replace entity @s armor.X from entity <temp-stand> armor.X`) is
 the one technique confirmed working end-to-end for that slot so far.
+
+**`/item replace ... armor.X from entity <stand>` ALSO silently refuses an
+item that isn't equippable in that slot**, even once the relay technique
+above is used correctly. Confirmed via a controlled A/B test
+(`debug/diagnose_armor_stand_relay.mcfunction` vs `_relay2.mcfunction`):
+merging `minecraft:diamond_chestplate` onto the relay stand and copying it
+onto a player worked fine, but merging a disguise item like
+`minecraft:stick` (no `minecraft:equippable` component) onto the SAME
+relay stand and copying it over silently did nothing - the merge onto the
+stand itself always succeeds (that write isn't validated at all), it's
+specifically the copy onto the *player's armor slot* that gets rejected.
+Fix: explicitly add `"minecraft:equippable":{"slot":"<slot>"}` to the
+disguise item's components before the relay copy - see
+`apply_nullify_armor.mcfunction`/`apply_nullify_equipment_slot.mcfunction`.
+This is what was actually breaking elytra disguising, even after the
+armor-stand relay itself was already in place and working for real armor
+pieces.
+
+**Datapack file changes on disk do NOT take effect until `/reload` runs.**
+Obvious in principle, easy to forget mid-session: deploying an updated
+`.zip` to the world's `datapacks/` folder has no effect on the currently
+running game until the player runs `/reload` (or restarts). A "the fix
+still doesn't work" test result is meaningless if no `/reload` happened
+between the deploy and the test - always confirm a `Reloading!` log line
+exists AFTER the deploy timestamp before trusting a negative test result.
 
 **`execute if entity @e[...]` (existence check) is not the same as
 `execute if data entity @e[...] <path>` (NBT path existence check).** The

@@ -49,10 +49,19 @@ scoreboard objectives add scdi_dummy_id dummy
 # below for DPS tracking (also in tenths).
 scoreboard objectives add scdi_dummy_dmg dummy
 # health reading at *10 scale, purely for the damage-delta math above - kept
-# separate from scdi_health (scale 1, used for the death-threshold check in
-# apply_check_dummy_hit2.mcfunction) so changing one's precision never
+# separate from scdi_health (scale 1) so changing one's precision never
 # affects the other.
 scoreboard objectives add scdi_dummy_health_fine dummy
+# a MORTAL dummy's real death gate - a simulated player-sized health pool
+# (tenths scale, capped at dummy_one_shot_damage*10), tracked entirely
+# separately from the large safety-buffer pool (dummy_max_health). drains
+# by the same amount as every hit, regenerates on the same passive-regen
+# schedule, dies at 0 - see apply_check_dummy_hit.mcfunction/
+# apply_check_dummy_hit2.mcfunction/apply_dummy_regen_heal.mcfunction. an
+# invincible dummy still tracks this (so it picks up where it left off if
+# ever made mortal again) but never lets it gate death - that dummy uses
+# its own separate scdi_dummy_invincible_floor segment system instead.
+scoreboard objectives add scdi_dummy_sim_hp dummy
 # running damage total for the CURRENT encounter (since the dummy was last
 # at full health) and the global tick it started - together these drive
 # the DPS readout on the health display (see
@@ -78,6 +87,20 @@ scoreboard objectives add scdi_dummy_invincible_floor dummy
 # drops its own items (apply_drop_all_dummy_items.mcfunction) so it doesn't
 # immediately re-equip the exact items it was just made to throw away.
 scoreboard objectives add scdi_dummy_pickup_cooldown_until dummy
+# per-dummy "pin in place" toggle (see menu/dummy_menu_pin_on.mcfunction/
+# _off.mcfunction, dummy_menu_show.mcfunction) - a strictly stronger form
+# of immobility than dummy_immobile/knockback_resistance, which only
+# dampens COMBAT knockback and does nothing against pistons, water/lava
+# currents, or any other physical displacement. a pinned dummy gets
+# teleported back to its exact captured position every tick
+# (apply_dummy_pin_tick.mcfunction), unconditionally overriding anything
+# that moved it that tick. position captured at *1000 scale (three decimal
+# places) for sub-block precision, same trick already used for the
+# throw-direction marker in apply_drop_all_dummy_items.mcfunction.
+scoreboard objectives add scdi_dummy_pinned dummy
+scoreboard objectives add scdi_dummy_pin_x dummy
+scoreboard objectives add scdi_dummy_pin_y dummy
+scoreboard objectives add scdi_dummy_pin_z dummy
 # global-tick timestamp set on a one-off "ONE SHOT" display at spawn (see
 # apply_configure_dummy_one_shot_display.mcfunction) so the expiry sweep in
 # tick.mcfunction knows how long it's existed.
@@ -94,6 +117,18 @@ scoreboard objectives add ScdiDummyMenu trigger
 scoreboard objectives add ScdiTeamRequest trigger
 scoreboard objectives add ScdiTeamConfirm trigger
 scoreboard objectives add ScdiTeamReset trigger
+# a single shared trigger for every button inside the dummy-management menu
+# (dummy_menu_show.mcfunction) - see dummy_menu_action_dispatch.mcfunction
+# for the full story. "/trigger X" is permission-level 0 (any player can
+# run it) but "/function scdi:..." is level 2 (operator-only) EVEN when
+# fired via a clickable chat button - a non-op player clicking any of those
+# buttons was silently failing with a permission error, never reaching the
+# function's own internal allow_dummy_trigger check at all. every button
+# now runs "/trigger ScdiDummyAction set N" instead (always allowed), and
+# the tick loop (running with full server permissions) does the actual
+# /function call on their behalf, exactly like the ScdiDummy/ScdiDummyMenu
+# triggers already do for the menu's entry points.
+scoreboard objectives add ScdiDummyAction trigger
 
 # label shown next to the number if show_timer_above_head displays this
 # objective below players' nametags (see further down) - harmless no-op
@@ -136,6 +171,7 @@ scoreboard players set $ceil_offset scdi_const 999
 scoreboard players set $hundred scdi_const 100
 scoreboard players set $flash_div scdi_const 100
 scoreboard players set $two scdi_const 2
+scoreboard players set $four scdi_const 4
 scoreboard players set $twenty scdi_const 20
 scoreboard players set $ten scdi_const 10
 
@@ -150,6 +186,42 @@ execute unless data storage scdi:config disguise_item run data modify storage sc
 # time, it applies instantly and survives reloads:
 #   /data modify storage scdi:config disguise_model set value "minecraft:barrier"
 execute unless data storage scdi:config disguise_model run data modify storage scdi:config disguise_model set value "minecraft:barrier"
+
+# what the disguised item looks like WHEN WORN in an armor slot (elytra, or
+# any custom item rule targeting head/chest/legs/feet) - a completely
+# separate thing from disguise_model above. disguise_model only controls
+# minecraft:item_model (the 2D icon/held appearance); the armor-slot
+# equipment renderer instead reads minecraft:equippable's asset_id field
+# specifically, and if that's missing entirely - which it always was before
+# this setting existed - the disguised item renders as literally NOTHING on
+# the player's body while worn (confirmed via Minecraft's own docs: an
+# equippable item with no asset_id "does not render" in a non-head slot).
+# must be a real equipment asset id (assets/<ns>/equipment/<id>.json) - an
+# arbitrary item id like disguise_model uses won't work here, vanilla armor
+# material names like "leather"/"iron"/"diamond" etc. are the built-in
+# options. defaults to leather (plain, dyeable, valid for all 4 slots).
+# change it any time, it applies instantly and survives reloads:
+#   /data modify storage scdi:config disguise_armor_model set value "minecraft:leather"
+execute unless data storage scdi:config disguise_armor_model run data modify storage scdi:config disguise_armor_model set value "minecraft:leather"
+
+# whether currently-disguised armor gets red/yellow dust particles flashing
+# around it while worn (the worn model itself is a fixed red tint - see
+# apply_nullify_armor.mcfunction for why it's not repainted repeatedly),
+# same idea as the "(Tagged!)" actionbar flash - a clear, unmissable "this
+# is disabled" signal, not just in your own UI. particles never touch the
+# armor's own data, so unlike an earlier version of this feature there's no
+# equip-sound risk. on by default. change any time, survives reloads:
+#   /data modify storage scdi:config disguise_armor_flash set value 1b   (on, default)
+#   /data modify storage scdi:config disguise_armor_flash set value 0b   (off)
+execute unless data storage scdi:config disguise_armor_flash run data modify storage scdi:config disguise_armor_flash set value 1b
+
+# how many ticks (20 = 1 second) each flash color phase lasts - default 4
+# (0.2s per phase). cycle is red/yellow/red/red (see
+# apply_disguise_armor_flash_check.mcfunction), so a full cycle is 4x this
+# value. only matters if disguise_armor_flash is on. change any time,
+# survives reloads:
+#   /data modify storage scdi:config disguise_armor_flash_interval set value 4
+execute unless data storage scdi:config disguise_armor_flash_interval run data modify storage scdi:config disguise_armor_flash_interval set value 4
 
 # the display name shown on the disguised item (minecraft:custom_name
 # component - purely cosmetic). change it any time, it applies instantly and
@@ -411,18 +483,32 @@ execute unless data storage scdi:config tag_attacker run data modify storage scd
 execute unless data storage scdi:config tag_victim run data modify storage scdi:config tag_victim set value 1b
 
 # whether hitting/being hit by a TEAMMATE still tags anyone, independent of
-# the general tag_attacker/tag_victim toggles above. both default: on (no
-# change from always-tagging - teams currently only exempt proximity
-# tagging, not hits, unless you turn these off). guessed via proximity (the
-# hit-detection advancements don't expose the other party's identity - see
+# the general tag_attacker/tag_victim toggles above. default: attacker still
+# gets tagged (you're the one who screwed up swinging at a teammate), victim
+# does NOT (they didn't do anything wrong, no reason to lock their items
+# over someone else's mistake). guessed via proximity (the hit-detection
+# advancements don't expose the other party's identity - see
 # check_team_exemption_attacker.mcfunction/check_team_exemption_victim.mcfunction).
 # change any time, survives reloads:
 #   /data modify storage scdi:config team_tag_attacker set value 1b   (hitting a teammate still tags you, default)
 #   /data modify storage scdi:config team_tag_attacker set value 0b   (hitting a teammate never tags you)
-#   /data modify storage scdi:config team_tag_victim set value 1b     (getting hit by a teammate still tags you, default)
-#   /data modify storage scdi:config team_tag_victim set value 0b     (getting hit by a teammate never tags you)
+#   /data modify storage scdi:config team_tag_victim set value 1b     (getting hit by a teammate still tags you)
+#   /data modify storage scdi:config team_tag_victim set value 0b     (getting hit by a teammate never tags you, default)
 execute unless data storage scdi:config team_tag_attacker run data modify storage scdi:config team_tag_attacker set value 1b
-execute unless data storage scdi:config team_tag_victim run data modify storage scdi:config team_tag_victim set value 1b
+execute unless data storage scdi:config team_tag_victim run data modify storage scdi:config team_tag_victim set value 0b
+
+# whether PROXIMITY tagging (proximity_tagging above, off by default) also
+# exempts teammates from tagging each other just by standing close, the same
+# way team_tag_attacker/team_tag_victim above can exempt them from HIT-based
+# tagging. off by default, which is actually the more restrictive state here
+# despite matching the "off" pattern above - proximity tagging always
+# exempted teammates unconditionally before this setting existed (see
+# check_proximity_apply.mcfunction), so off = keep that original behavior,
+# on = teammates proximity-tag each other exactly like any other nearby
+# player. change any time, survives reloads:
+#   /data modify storage scdi:config team_tag_proximity set value 1b   (teammates proximity-tag each other too)
+#   /data modify storage scdi:config team_tag_proximity set value 0b   (teammates never proximity-tag each other, default)
+execute unless data storage scdi:config team_tag_proximity run data modify storage scdi:config team_tag_proximity set value 0b
 
 # whether one-shotting someone (killing them in the single hit that first
 # tags them - see maybe_tag_attacker.mcfunction/check_one_shot_exemption_attacker.mcfunction)
@@ -576,6 +662,30 @@ execute unless data storage scdi:config dummy_announce_one_shot run data modify 
 #   /data modify storage scdi:config dummy_one_shot_ignore_tag set value 0b   (only its first-ever hit counts, default)
 execute unless data storage scdi:config dummy_one_shot_ignore_tag run data modify storage scdi:config dummy_one_shot_ignore_tag set value 0b
 
+# whether killing a mortal dummy also announces how long the kill took, from
+# the hit that took it off full health to the lethal hit
+# (scdi_dummy_encounter_start_tick, set in apply_check_dummy_hit.mcfunction -
+# the same "fresh encounter" marker DPS tracking already uses). on by
+# default, same reasoning as dummy_announce_one_shot above. change any time,
+# survives reloads:
+#   /data modify storage scdi:config dummy_announce_time_to_kill set value 1b   (on, default)
+#   /data modify storage scdi:config dummy_announce_time_to_kill set value 0b   (off)
+execute unless data storage scdi:config dummy_announce_time_to_kill run data modify storage scdi:config dummy_announce_time_to_kill set value 1b
+
+# the minimum time window (in ticks, 20/sec) the live DPS readout
+# (apply_update_dummy_health_display.mcfunction) averages damage over,
+# even right after a fresh encounter's first hit. without a floor here,
+# that first hit gets divided by however few ticks have actually passed
+# (as little as 1) and extrapolated into a wildly inflated instantaneous
+# rate instead of a real sustained average - see
+# apply_update_dummy_health_display.mcfunction for the full explanation.
+# default 20 (1 second). raise it for a smoother/slower-to-react DPS
+# number, lower it (minimum 1) for a twitchier one that reacts to single
+# hits almost immediately, at the cost of it being less "real". change any
+# time, survives reloads:
+#   /data modify storage scdi:config dummy_dps_window set value 20
+execute unless data storage scdi:config dummy_dps_window run data modify storage scdi:config dummy_dps_window set value 20
+
 # whether an invincible dummy cheating death on a 20-point segment
 # (apply_dummy_invincible_segment_topoff.mcfunction) ALSO announces it in
 # chat, on top of the floating "Cheated Death!" text_display it always
@@ -632,35 +742,28 @@ execute unless data storage scdi:config dummy_immobile run data modify storage s
 execute unless data storage scdi:config dummy_no_gravity run data modify storage scdi:config dummy_no_gravity set value 0b
 
 # a dummy's max health (set on spawn via configure_new_dummy.mcfunction) -
-# deliberately much larger than a real player's 20, paired with
-# dummy_death_threshold below (default 20 - a normal player's worth). gives
-# a wide, unambiguous margin so drop-on-death reliably fires with room to
-# spare, at the cost of no longer being 1:1 comparable to hitting a real
-# 20-health player. default 1000. only takes effect for NEWLY spawned
-# dummies, not existing ones. change any time, survives reloads:
+# deliberately much larger than a real player's 20. this is PURELY a safety
+# buffer against item loss now, not the thing that decides when a mortal
+# dummy actually dies - see dummy_one_shot_damage below and
+# apply_check_dummy_hit2.mcfunction/scdi_dummy_sim_hp for the real death
+# gate. default 1000. only takes effect for NEWLY spawned dummies, not
+# existing ones. change any time, survives reloads:
 #   /data modify storage scdi:config dummy_max_health set value 1000
 execute unless data storage scdi:config dummy_max_health run data modify storage scdi:config dummy_max_health set value 1000
 
-# health value at or below which a dummy counts as "dead" (drops its items,
-# gets removed) - see apply_check_dummy_hit2.mcfunction. default 20, not 0 -
-# now that dummy_max_health above gives every dummy a large pool, "dead"
-# means "down to its last normal-player-sized stretch of health", not
-# literally the very bottom of the whole pool. change any time, survives
+# a mortal dummy's real death gate: a SIMULATED health pool (scdi_dummy_sim_hp,
+# see configure_new_dummy.mcfunction/apply_check_dummy_hit.mcfunction/
+# apply_dummy_regen_heal.mcfunction), capped at this value and tracked
+# completely separately from the large safety-buffer pool above - drains by
+# the exact same amount as every hit that pool takes, regenerates on the
+# same passive-regen schedule, and dying happens the instant it reaches 0.
+# this is what makes a mortal dummy actually behave like a player
+# replacement under SUSTAINED combat, not just a single one-shot-capable
+# hit: two hits of 12 each wouldn't individually reach this value, but
+# their SUM does, exactly like it would against a real player, whereas
+# checking the big buffer pool alone would barely notice either hit.
+# default 20 - a normal player's own max health. change any time, survives
 # reloads:
-#   /data modify storage scdi:config dummy_death_threshold set value 20
-execute unless data storage scdi:config dummy_death_threshold run data modify storage scdi:config dummy_death_threshold set value 20
-
-# a SEPARATE lethal condition from the threshold above, for a mortal dummy
-# only: any single hit dealing at least this much damage kills it outright,
-# regardless of how much of its (large) pool is left. without this, "does
-# this weapon one-shot a player" stops being directly testable once a
-# dummy has a big buffer - a hit that would instantly kill a real 20-health
-# player barely dents a 1000-health pool, so it'd take many such hits
-# before dummy_death_threshold above ever got reached. default 20 - a
-# normal player's own max health, so a genuinely one-shot-capable hit kills
-# the dummy exactly like it would a real player, while still-lethal-but-
-# smaller hits chip away at the pool normally (see apply_check_dummy_hit2.mcfunction
-# for how the two conditions combine). change any time, survives reloads:
 #   /data modify storage scdi:config dummy_one_shot_damage set value 20
 execute unless data storage scdi:config dummy_one_shot_damage run data modify storage scdi:config dummy_one_shot_damage set value 20
 

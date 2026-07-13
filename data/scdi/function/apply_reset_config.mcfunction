@@ -18,6 +18,9 @@ scoreboard players set $dummy_regen_interval scdi_const 20
 
 data modify storage scdi:config disguise_item set value "minecraft:stick"
 data modify storage scdi:config disguise_model set value "minecraft:barrier"
+data modify storage scdi:config disguise_armor_model set value "minecraft:leather"
+data modify storage scdi:config disguise_armor_flash set value 1b
+data modify storage scdi:config disguise_armor_flash_interval set value 4
 data modify storage scdi:config disguise_name set value "Items Disabled!"
 data modify storage scdi:config disguise_name_color set value "red"
 data modify storage scdi:config disguise_name_bold set value 1b
@@ -47,7 +50,8 @@ data modify storage scdi:config passive_restore set value 1b
 data modify storage scdi:config tag_attacker set value 1b
 data modify storage scdi:config tag_victim set value 1b
 data modify storage scdi:config team_tag_attacker set value 1b
-data modify storage scdi:config team_tag_victim set value 1b
+data modify storage scdi:config team_tag_victim set value 0b
+data modify storage scdi:config team_tag_proximity set value 0b
 data modify storage scdi:config no_tag_on_one_shot_kill set value 0b
 data modify storage scdi:config no_tag_victim_on_one_shot set value 1b
 data modify storage scdi:config announce_one_shot set value 1b
@@ -70,6 +74,8 @@ data modify storage scdi:config dummy_look_range set value 10.0
 data modify storage scdi:config dummy_pickup_items set value 0b
 data modify storage scdi:config dummy_announce_one_shot set value 1b
 data modify storage scdi:config dummy_one_shot_ignore_tag set value 0b
+data modify storage scdi:config dummy_announce_time_to_kill set value 1b
+data modify storage scdi:config dummy_dps_window set value 20
 data modify storage scdi:config dummy_announce_cheated_death set value 0b
 data modify storage scdi:config dummy_show_health set value 1b
 data modify storage scdi:config dummy_regen set value 1b
@@ -78,7 +84,6 @@ data modify storage scdi:config dummy_regen_amount set value 1
 data modify storage scdi:config dummy_immobile set value 1b
 data modify storage scdi:config dummy_no_gravity set value 0b
 data modify storage scdi:config dummy_max_health set value 1000
-data modify storage scdi:config dummy_death_threshold set value 20
 data modify storage scdi:config dummy_one_shot_damage set value 20
 data modify storage scdi:config dummy_damage_numbers set value 1b
 data modify storage scdi:config team_request_timeout set value 600

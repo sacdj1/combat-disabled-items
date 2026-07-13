@@ -90,6 +90,18 @@ def check_macro_call_safety():
                         fail(f"{p.relative_to(ROOT)}:{i}: calls macro function {fn} without 'with'/inline args: {line.strip()}")
 
 
+def check_empty_macro_lines():
+    """A line starting with '$' with no '$(...)' variable anywhere on it is
+    a hard function-load parse error ("No variables in macro"), not a
+    no-op - the whole function fails to load, exactly like the missing-
+    'with' case check_macro_call_safety catches, just triggered by a typo
+    (an accidental leading '$') instead of a missing call-site argument."""
+    for p in FUNC_DIR.rglob("*.mcfunction"):
+        for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+            if line.startswith("$") and "$(" not in line:
+                fail(f"{p.relative_to(ROOT)}:{i}: line starts with '$' but has no '$(...)' variable - remove the leading '$' or this function fails to load entirely: {line.strip()}")
+
+
 def check_config_key_sync():
     load_text = (FUNC_DIR / "load.mcfunction").read_text(encoding="utf-8")
     reset_text = (FUNC_DIR / "apply_reset_config.mcfunction").read_text(encoding="utf-8")
@@ -142,6 +154,7 @@ def main():
     check_references()
     check_json_validity()
     check_macro_call_safety()
+    check_empty_macro_lines()
     check_config_key_sync()
     check_objective_sync()
 

@@ -1,10 +1,15 @@
-# rebuilt from scratch alongside apply_nullify_armor.mcfunction - /item
-# modify and /loot replace both proved non-functional for armor.chest on a
-# real player in this environment (see debug/diagnose_armor_real). direct
-# NBT write instead: reconstructs a fresh elytra compound with the real
-# captured snapshot (enchantments/trim/durability/name - whatever was
-# really on it) merged in as its components, written straight into the
-# equipment slot in one shot - the same proven-working technique as
-# apply_nullify_armor.mcfunction.
-$data modify entity @s equipment.chest set value {id:"minecraft:elytra",count:$(count),components:$(snapshot)}
+# rebuilt AGAIN alongside apply_nullify_armor.mcfunction - see that file's
+# header for why the previous "data modify entity @s equipment.chest set
+# value {...}" direct write silently did nothing on a real player (that
+# technique only actually works on non-player entities like the dummy,
+# where it was copied from). same armor-stand relay fix here: reconstruct
+# the real elytra (real captured components - enchantments/trim/
+# durability/name, whatever was really on it - merged back in) onto a
+# throwaway armor stand via a normal entity data merge, then /item replace
+# the player's slot FROM the stand.
+execute at @s run summon minecraft:armor_stand ~ ~ ~ {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["scdi_armor_relay"]}
+$execute as @e[type=minecraft:armor_stand,tag=scdi_armor_relay,limit=1,sort=nearest] run data merge entity @s {equipment:{chest:{id:"minecraft:elytra",count:$(count),components:$(snapshot)}}}
+item replace entity @s armor.chest from entity @e[type=minecraft:armor_stand,tag=scdi_armor_relay,limit=1,sort=nearest] armor.chest
+kill @e[type=minecraft:armor_stand,tag=scdi_armor_relay,limit=1,sort=nearest]
+
 execute if data storage scdi:config {debug_custom_items:1b} run tellraw @s [{"text":"[elytra] apply_restore_armor done - chest now = ","color":"gray"},{"nbt":"equipment.chest.id","entity":"@s","interpret":false}]
