@@ -19,14 +19,12 @@
 # without an asset_id it writes fine but renders as nothing at all on the
 # wearer; disguise_armor_model (see apply_nullify_armor.mcfunction) fills
 # that in, same value reused for whichever slot this is. dyed_color is set
-# ONCE here to a fixed red tint (16711680), not updated repeatedly
-# afterward - see apply_nullify_armor.mcfunction for why (equip_sound has
-# no volume control and no real vanilla sound is silent by nature, so any
-# later write to an equipped item's components keeps re-triggering an
-# audible sound with no way to suppress it). the ongoing flash lives in
-# particles instead now (apply_disguise_armor_flash_check.mcfunction).
+# ONCE here to a fixed red tint (16711680), same baseline as
+# apply_nullify_armor.mcfunction - see that file for the full story on
+# equip_sound (set to disguise_armor_equip_sound, a soft default instead of
+# the harsh armor clink) and the optional recolor-on-flash feature.
 execute at @s run summon minecraft:armor_stand ~ ~ ~ {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["scdi_armor_relay"]}
-$execute as @e[type=minecraft:armor_stand,tag=scdi_armor_relay,limit=1,sort=nearest] run data merge entity @s {equipment:{$(equip_key):{id:"$(item)",count:1,components:{"minecraft:custom_data":{"scdi":{"null":true,"orig":"$(orig)","snapshot":$(snapshot),"real_count":$(real_count)}},"minecraft:item_model":"$(model)","minecraft:custom_name":{"text":"$(name)","color":"$(name_color)","bold":$(name_bold),"italic":$(name_italic)},"minecraft:enchantment_glint_override":$(glint),"minecraft:dyed_color":16711680,"minecraft:equippable":{"slot":"$(equip_key)","asset_id":"$(armor_model)"}}}}}
+$execute as @e[type=minecraft:armor_stand,tag=scdi_armor_relay,limit=1,sort=nearest] run data merge entity @s {equipment:{$(equip_key):{id:"$(item)",count:1,components:{"minecraft:custom_data":{"scdi":{"null":true,"orig":"$(orig)","snapshot":$(snapshot),"real_count":$(real_count)}},"minecraft:item_model":"$(model)","minecraft:custom_name":{"text":"$(name)","color":"$(name_color)","bold":$(name_bold),"italic":$(name_italic)},"minecraft:enchantment_glint_override":$(glint),"minecraft:dyed_color":16711680,"minecraft:equippable":{"slot":"$(equip_key)","asset_id":"$(armor_model)","equip_sound":"$(armor_sound)"}}}}}
 $item replace entity @s $(slot_arg) from entity @e[type=minecraft:armor_stand,tag=scdi_armor_relay,limit=1,sort=nearest] $(slot_arg)
 kill @e[type=minecraft:armor_stand,tag=scdi_armor_relay,limit=1,sort=nearest]
 

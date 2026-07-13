@@ -107,6 +107,11 @@ scoreboard objectives add scdi_dummy_pin_z dummy
 scoreboard objectives add scdi_display_spawn_tick dummy
 scoreboard objectives add scdi_item_dur dummy
 scoreboard objectives add scdi_item_sec dummy
+# which red/yellow flash phase a tagged player's disguised armor was last
+# repainted to - only used by the OPTIONAL disguise_armor_recolor feature
+# (off by default, see apply_disguise_armor_flash_recolor_check.mcfunction),
+# not the always-on particle flash which needs no per-player state at all.
+scoreboard objectives add scdi_armor_flash_phase dummy
 # "trigger" type, not dummy - lets any player (no op needed) fire /help and
 # /menu via /trigger, since plain /function requires permission level 2. see
 # tick.mcfunction for the dispatch/reset logic.
@@ -222,6 +227,26 @@ execute unless data storage scdi:config disguise_armor_flash run data modify sto
 # survives reloads:
 #   /data modify storage scdi:config disguise_armor_flash_interval set value 4
 execute unless data storage scdi:config disguise_armor_flash_interval run data modify storage scdi:config disguise_armor_flash_interval set value 4
+
+# whether the worn armor ITSELF also gets recolored on every flash phase
+# (on top of the particles above), not just tinted once and left alone.
+# off by default, opt-in - every attempt to make this silent failed
+# (equip_sound has no volume control, and no real vanilla sound is silent
+# by nature - see apply_nullify_armor.mcfunction's history of this), so
+# turning this on means accepting a sound plays on every color change.
+# disguise_armor_equip_sound below at least lets you pick something less
+# jarring than the default armor clink. change any time, survives reloads:
+#   /data modify storage scdi:config disguise_armor_recolor set value 1b   (armor itself repaints too, will make noise)
+#   /data modify storage scdi:config disguise_armor_recolor set value 0b   (particles only, silent, default)
+execute unless data storage scdi:config disguise_armor_recolor run data modify storage scdi:config disguise_armor_recolor set value 0b
+
+# which sound plays on the disguised armor's equip events - the very first
+# swap always makes ONE sound no matter what (same as any other equip,
+# expected/normal), and if disguise_armor_recolor above is also on, this
+# plays again on every repaint too. defaults to a short, soft note rather
+# than the default armor clink. change any time, survives reloads:
+#   /data modify storage scdi:config disguise_armor_equip_sound set value "minecraft:block.note_block.bit"
+execute unless data storage scdi:config disguise_armor_equip_sound run data modify storage scdi:config disguise_armor_equip_sound set value "minecraft:block.note_block.bit"
 
 # the display name shown on the disguised item (minecraft:custom_name
 # component - purely cosmetic). change it any time, it applies instantly and

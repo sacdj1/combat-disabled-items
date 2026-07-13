@@ -21,6 +21,8 @@ data modify storage scdi:config disguise_model set value "minecraft:barrier"
 data modify storage scdi:config disguise_armor_model set value "minecraft:leather"
 data modify storage scdi:config disguise_armor_flash set value 1b
 data modify storage scdi:config disguise_armor_flash_interval set value 4
+data modify storage scdi:config disguise_armor_recolor set value 0b
+data modify storage scdi:config disguise_armor_equip_sound set value "minecraft:block.note_block.bit"
 data modify storage scdi:config disguise_name set value "Items Disabled!"
 data modify storage scdi:config disguise_name_color set value "red"
 data modify storage scdi:config disguise_name_bold set value 1b

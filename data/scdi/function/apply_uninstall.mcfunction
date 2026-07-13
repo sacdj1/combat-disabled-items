@@ -69,6 +69,8 @@ data remove storage scdi:config disguise_model
 data remove storage scdi:config disguise_armor_model
 data remove storage scdi:config disguise_armor_flash
 data remove storage scdi:config disguise_armor_flash_interval
+data remove storage scdi:config disguise_armor_recolor
+data remove storage scdi:config disguise_armor_equip_sound
 data remove storage scdi:config disguise_name
 data remove storage scdi:config disguise_name_bold
 data remove storage scdi:config disguise_name_color
@@ -162,6 +164,7 @@ scoreboard objectives remove scdi_dummy_pin_z
 scoreboard objectives remove scdi_display_spawn_tick
 scoreboard objectives remove scdi_item_dur
 scoreboard objectives remove scdi_item_sec
+scoreboard objectives remove scdi_armor_flash_phase
 scoreboard objectives remove ScdiHelp
 scoreboard objectives remove ScdiMenu
 scoreboard objectives remove ScdiDummy

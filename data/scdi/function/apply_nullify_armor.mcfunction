@@ -40,19 +40,18 @@
 # just reuse $(model). disguise_armor_model (default "minecraft:leather")
 # is the dedicated config for this - see load.mcfunction/menu -> Disguise.
 #
-# dyed_color is set ONCE here, statically, to a fixed red tint (16711680)
-# rather than updated repeatedly afterward - equip_sound turned out to have
-# no volume control at all (only sound_id/range - confirmed via the actual
-# NBT schema, not just an early guess) and no real registered vanilla sound
-# is silent by nature, so ANY later write to this equipped item's
-# components would keep re-triggering an audible equip sound with no way
-# to suppress it. the ongoing red/yellow FLASH now lives entirely in
-# particles instead (see apply_disguise_armor_flash_check.mcfunction),
-# which never touch the armor's own data after this one initial swap (and
-# this one swap's own equip sound is normal/expected, same as any other
-# equip).
+# dyed_color is set once here to a fixed red tint (16711680) as the
+# baseline - see apply_disguise_armor_flash_particle_slot.mcfunction for
+# the particle-based ongoing flash (always on, silent) and
+# apply_disguise_armor_flash_recolor_slot.mcfunction for the OPTIONAL
+# additional armor-repaint-on-flash (disguise_armor_recolor, off by
+# default - every attempt to make that silent failed, so it's an
+# accepted-tradeoff opt-in, not the default). equip_sound is set to
+# disguise_armor_equip_sound (default a soft note, not the harsh default
+# armor clink) so that at minimum the ONE guaranteed sound - this initial
+# swap - is as unobtrusive as possible, whether or not recolor is on.
 execute at @s run summon minecraft:armor_stand ~ ~ ~ {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["scdi_armor_relay"]}
-$execute as @e[type=minecraft:armor_stand,tag=scdi_armor_relay,limit=1,sort=nearest] run data merge entity @s {equipment:{chest:{id:"$(item)",count:1,components:{"minecraft:custom_data":{"scdi":{"null":true,"orig":"$(orig)","snapshot":$(snapshot),"real_count":$(real_count)}},"minecraft:item_model":"$(model)","minecraft:custom_name":{"text":"$(name)","color":"$(name_color)","bold":$(name_bold),"italic":$(name_italic)},"minecraft:enchantment_glint_override":$(glint),"minecraft:dyed_color":16711680,"minecraft:equippable":{"slot":"chest","asset_id":"$(armor_model)"}}}}}
+$execute as @e[type=minecraft:armor_stand,tag=scdi_armor_relay,limit=1,sort=nearest] run data merge entity @s {equipment:{chest:{id:"$(item)",count:1,components:{"minecraft:custom_data":{"scdi":{"null":true,"orig":"$(orig)","snapshot":$(snapshot),"real_count":$(real_count)}},"minecraft:item_model":"$(model)","minecraft:custom_name":{"text":"$(name)","color":"$(name_color)","bold":$(name_bold),"italic":$(name_italic)},"minecraft:enchantment_glint_override":$(glint),"minecraft:dyed_color":16711680,"minecraft:equippable":{"slot":"chest","asset_id":"$(armor_model)","equip_sound":"$(armor_sound)"}}}}}
 item replace entity @s armor.chest from entity @e[type=minecraft:armor_stand,tag=scdi_armor_relay,limit=1,sort=nearest] armor.chest
 kill @e[type=minecraft:armor_stand,tag=scdi_armor_relay,limit=1,sort=nearest]
 
