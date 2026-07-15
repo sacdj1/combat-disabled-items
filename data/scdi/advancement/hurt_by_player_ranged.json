@@ -1,0 +1,26 @@
+{
+  "criteria": {
+    "req": {
+      "trigger": "minecraft:entity_hurt_player",
+      "conditions": {
+        "damage": {
+          "source_entity": {
+            "entity_type": "minecraft:player",
+            "distance": {
+              "absolute": {"min": 0.01}
+            }
+          },
+          "type": {
+            "tags": [
+              {"id": "scdi:self_attributable", "expected": false},
+              {"id": "minecraft:is_projectile", "expected": true}
+            ]
+          }
+        }
+      }
+    }
+  },
+  "rewards": {
+    "function": "scdi:on_hurt_by_player_ranged"
+  }
+}

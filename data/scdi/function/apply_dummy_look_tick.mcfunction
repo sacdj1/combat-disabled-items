@@ -11,4 +11,10 @@
 # chain to compute FROM the dummy's own eye position instead, matching how
 # two players naturally look at each other (eye height to eye height, not
 # feet to eyes).
-$execute as @e[type=minecraft:mannequin,tag=scdi_dummy] at @s anchored eyes if entity @p[distance=..$(range)] facing entity @p[distance=..$(range)] eyes run $(cmd) @s ~ ~ ~ ~ ~
+#
+# excludes a dummy currently mid fire-extinguish sequence
+# (scdi_dummy_extinguishing - see apply_dummy_start_extinguish.mcfunction) -
+# that sequence deliberately looks down to "place" a water block, and this
+# would fight it every tick (overwriting the look-down rotation back to
+# facing the player) without this exclusion.
+$execute as @e[type=minecraft:mannequin,tag=scdi_dummy] unless score @s scdi_dummy_extinguishing matches 1 at @s anchored eyes if entity @p[distance=..$(range)] facing entity @p[distance=..$(range)] eyes run $(cmd) @s ~ ~ ~ ~ ~

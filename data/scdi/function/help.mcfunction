@@ -20,4 +20,6 @@ execute if data storage scdi:config {pve_mode:1b} run tellraw @s ["",{"text":"Pv
 
 execute if score @s scdi_tag matches 1 run function scdi:help_show_status
 
+tellraw @s [{"text":"[My Settings]","color":"aqua","underlined":true,"click_event":{"action":"run_command","command":"/trigger ScdiPlayerMenu"}},{"text":" - your own preferences (warning messages, etc).","color":"dark_gray"}]
+
 tellraw @s [{"text":"Admins: ","color":"dark_gray"},{"text":"[Open settings menu]","color":"aqua","underlined":true,"click_event":{"action":"run_command","command":"/function scdi:menu"}},{"text":" (op only)","color":"dark_gray"}]

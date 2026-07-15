@@ -27,11 +27,20 @@
 # or dummy triggers it, teammate or not (menu/team_tag_proximity_on.mcfunction
 # warns about this when it's turned on - being teamed up stops meaning much
 # once proximity tagging no longer respects it).
+# the two @a (player-vs-player) lines below route through
+# check_proximity_role_gate.mcfunction (attacker/victim role inferred from
+# movement, if proximity_role_by_movement is on - see load.mcfunction)
+# instead of tagging directly. the two dummy lines stay untouched -
+# movement-based roles don't apply to a stationary test dummy.
 scoreboard players set $prox_diff scdi_const 0
-$execute if data storage scdi:config {team_tag_proximity:1b} if entity @a[distance=0.01..$(dist)] run function scdi:on_proximity_tag
-$execute if data storage scdi:config {team_tag_proximity:1b} if entity @e[type=minecraft:mannequin,tag=scdi_dummy,distance=0.01..$(dist)] run function scdi:on_proximity_tag
-$execute unless data storage scdi:config {team_tag_proximity:1b} unless score @s scdi_team matches 1.. if entity @a[distance=0.01..$(dist)] run function scdi:on_proximity_tag
-$execute unless data storage scdi:config {team_tag_proximity:1b} unless score @s scdi_team matches 1.. if entity @e[type=minecraft:mannequin,tag=scdi_dummy,distance=0.01..$(dist)] run function scdi:on_proximity_tag
+$execute if data storage scdi:config {team_tag_proximity:1b} if entity @a[distance=0.01..$(dist)] run function scdi:check_proximity_role_gate {dist:$(dist)}
+$execute if data storage scdi:config {team_tag_proximity:1b} if data storage scdi:config {dummy_proximity_tagging:1b} if entity @e[type=minecraft:mannequin,tag=scdi_dummy,distance=0.01..$(dist)] run function scdi:on_proximity_tag
+$execute unless data storage scdi:config {team_tag_proximity:1b} unless score @s scdi_team matches 1.. if entity @a[distance=0.01..$(dist)] run function scdi:check_proximity_role_gate {dist:$(dist)}
+$execute unless data storage scdi:config {team_tag_proximity:1b} unless score @s scdi_team matches 1.. if data storage scdi:config {dummy_proximity_tagging:1b} if entity @e[type=minecraft:mannequin,tag=scdi_dummy,distance=0.01..$(dist)] run function scdi:on_proximity_tag
 $execute unless data storage scdi:config {team_tag_proximity:1b} if score @s scdi_team matches 1.. as @a[distance=0.01..$(dist)] unless score @s scdi_team matches $(myteam) run scoreboard players add $prox_diff scdi_const 1
-$execute unless data storage scdi:config {team_tag_proximity:1b} if score @s scdi_team matches 1.. as @e[type=minecraft:mannequin,tag=scdi_dummy,distance=0.01..$(dist)] unless score @s scdi_team matches $(myteam) run scoreboard players add $prox_diff scdi_const 1
+$execute unless data storage scdi:config {team_tag_proximity:1b} if data storage scdi:config {dummy_proximity_tagging:1b} if score @s scdi_team matches 1.. as @e[type=minecraft:mannequin,tag=scdi_dummy,distance=0.01..$(dist)] unless score @s scdi_team matches $(myteam) run scoreboard players add $prox_diff scdi_const 1
+# deliberately NOT routed through check_proximity_role_gate.mcfunction like
+# the two branches above - $prox_diff can be satisfied by a dummy alone
+# with no second real player nearby to compare movement against, so this
+# stays symmetric regardless of proximity_role_by_movement.
 execute unless data storage scdi:config {team_tag_proximity:1b} if score $prox_diff scdi_const matches 1.. run function scdi:on_proximity_tag

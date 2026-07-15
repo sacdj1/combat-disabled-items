@@ -7,15 +7,22 @@
 # itself behind an actual phase-change check in
 # apply_disguise_armor_flash_recolor_check.mcfunction.
 #
-# 4-step cycle (not a plain 50/50 toggle) - red, yellow, red, red, so red
-# shows 3x as often as yellow instead of an even split.
+# 4-step cycle (not a plain 50/50 toggle) - color_a/color_b/color_a/color_a
+# (see load.mcfunction's disguise_armor_flash_color_a/_b comment, default
+# red/yellow), so color_a shows 3x as often as color_b instead of an even
+# split.
 execute store result score $armor_flash_interval scdi_const run data get storage scdi:config disguise_armor_flash_interval 1
 scoreboard players operation $armor_flash_new_phase scdi_const = $ticks scdi_const
 scoreboard players operation $armor_flash_new_phase scdi_const /= $armor_flash_interval scdi_const
 scoreboard players operation $armor_flash_new_phase scdi_const %= $four scdi_const
 
-execute if score $armor_flash_new_phase scdi_const matches 1 run function scdi:apply_disguise_armor_flash_particles {r:1.0d,g:1.0d,b:0.0d}
-execute unless score $armor_flash_new_phase scdi_const matches 1 run function scdi:apply_disguise_armor_flash_particles {r:1.0d,g:0.0d,b:0.0d}
+# unpacks whichever configured color this phase calls for into 0.0-1.0 RGB
+# floats (scdi:tmp29 r/g/b - see apply_compute_flash_color_floats.mcfunction),
+# then reuses that same storage directly as the particle call's macro args.
+execute if score $armor_flash_new_phase scdi_const matches 1 store result storage scdi:tmp29 color int 1 run data get storage scdi:config disguise_armor_flash_color_b 1
+execute unless score $armor_flash_new_phase scdi_const matches 1 store result storage scdi:tmp29 color int 1 run data get storage scdi:config disguise_armor_flash_color_a 1
+function scdi:apply_compute_flash_color_floats with storage scdi:tmp29
+function scdi:apply_disguise_armor_flash_particles with storage scdi:tmp29
 
 # optional armor recolor (disguise_armor_recolor, off by default - see
 # load.mcfunction) - the armor ITSELF also repaints, not just particles.

@@ -1,6 +1,19 @@
 # runs exactly once, the instant the stopwatch crosses the duration threshold
 scoreboard players set @s scdi_tag 0
 
+# lets the armor/inventory-disabled visual warnings
+# (check_armor_warning.mcfunction/check_inventory_warning.mcfunction) show
+# again on the next fresh encounter, instead of only ever once per player
+# for the whole session.
+scoreboard players set @s scdi_armor_warning_shown 0
+scoreboard players set @s scdi_inventory_warning_shown 0
+
+# lets check_one_shot.mcfunction's single-hit gate fire again next
+# encounter too, same "fresh encounter" boundary as the two flags above -
+# without this reset, a player's first-ever hit would permanently block
+# one-shot detection for every encounter after it.
+scoreboard players set @s scdi_one_shot_hit 0
+
 # stamped every time combat ends, regardless of one_shot_cooldown_enabled -
 # check_one_shot.mcfunction reads this to tell "genuinely untouched by
 # combat for a while" apart from "just timed out of the last fight a moment

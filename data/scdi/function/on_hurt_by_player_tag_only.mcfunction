@@ -12,6 +12,16 @@
 execute if score @s scdi_untaggable matches 1.. run return 0
 execute if data storage scdi:config {ignore_creative:1b} if entity @s[gamemode=creative] run return 0
 
+# master switch (hit_tagging_enabled, default on) - see load.mcfunction.
+# doesn't touch proximity_tagging, a completely separate path.
+execute unless data storage scdi:config {hit_tagging_enabled:1b} run return 0
+
+# ranged-hit exclusion (ranged_attacks_tag, default on) - $hit_was_ranged is
+# set by whichever *_ranged.mcfunction reward-function variant called into
+# this chain (see on_hurt_by_player_ranged.mcfunction for the full
+# explanation), left at 0 by every melee path/debug/tag.
+execute if score $hit_was_ranged scdi_const matches 1 unless data storage scdi:config {ranged_attacks_tag:1b} run return 0
+
 # the very first hit always shows the title/sound and starts the timer fresh.
 # a follow-up hit while already tagged only restarts the timer if
 # retag_resets_timer is on (default: on) - checked BEFORE scdi_tag gets set

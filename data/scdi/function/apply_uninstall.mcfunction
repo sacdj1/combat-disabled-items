@@ -29,7 +29,8 @@ advancement revoke @a only scdi:placed_block
 # below_name release is gated on show_timer_above_head actually being on -
 # it's a single slot shared by the whole world, so clearing it unconditionally
 # would rip out some OTHER datapack/plugin's display if this pack never
-# claimed the slot in the first place.
+# claimed the slot in the first place. restores belowname_restore_objective
+# instead of just clearing, if one was set - see apply_release_belowname.mcfunction.
 kill @e[type=minecraft:text_display,tag=scdi_timer_display]
 kill @e[type=minecraft:text_display,tag=scdi_dummy_one_shot_display]
 kill @e[type=minecraft:text_display,tag=scdi_dummy_tag_display]
@@ -37,13 +38,20 @@ kill @e[type=minecraft:text_display,tag=scdi_dummy_damage_display]
 kill @e[type=minecraft:text_display,tag=scdi_dummy_cheated_death_display]
 kill @e[type=minecraft:text_display,tag=scdi_dummy_health_display]
 kill @e[type=minecraft:mannequin,tag=scdi_dummy]
-execute if data storage scdi:config {show_timer_above_head:1b} run scoreboard objectives setdisplay below_name
+execute if data storage scdi:config {show_timer_above_head:1b} run function scdi:apply_release_belowname with storage scdi:config
+execute if data storage scdi:config {show_team_on_tab:1b} run function scdi:apply_release_tablist with storage scdi:config
 
 # step 4: best-effort per-player stopwatch removal (see
 # apply_uninstall_stopwatch_at_id.mcfunction for why this is best-effort) -
 # must happen before scdi_const (which holds $next_id) is removed below
 scoreboard players set $uninstall_idx scdi_const 1
 function scdi:apply_uninstall_stopwatches
+
+# step 4b: same best-effort removal for every dummy's own combat-lock
+# stopwatch (create_dummy_stopwatch.mcfunction) - reuses $uninstall_idx,
+# reset again since the player loop above already finished with it.
+scoreboard players set $uninstall_idx scdi_const 1
+function scdi:apply_uninstall_dummy_stopwatches
 
 # step 5: wipe stored config - "data remove storage scdi:config" alone isn't
 # valid (the path argument is required, can't target the whole root at
@@ -52,6 +60,15 @@ function scdi:apply_uninstall_stopwatches
 # with no persistent meaning, so there's nothing worth clearing there.
 data remove storage scdi:config allow_dummy_trigger
 data remove storage scdi:config dummy_tagging
+data remove storage scdi:config dummy_combat_simulation
+data remove storage scdi:config dummy_extinguish_in_combat
+data remove storage scdi:config dummy_extinguish_on_cheat_death
+data remove storage scdi:config dummy_cheat_death_invulnerability
+data remove storage scdi:config dummy_cheat_death_sound_totem
+data remove storage scdi:config dummy_cheat_death_sound_allay
+data remove storage scdi:config dummy_cheat_death_particle
+data remove storage scdi:config dummy_invincible_default
+data remove storage scdi:config dummy_pinned_default
 data remove storage scdi:config announce_one_shot
 data remove storage scdi:config one_shot_cooldown_enabled
 data remove storage scdi:config one_shot_cooldown
@@ -69,8 +86,16 @@ data remove storage scdi:config disguise_model
 data remove storage scdi:config disguise_armor_model
 data remove storage scdi:config disguise_armor_flash
 data remove storage scdi:config disguise_armor_flash_interval
+data remove storage scdi:config disguise_armor_flash_color_a
+data remove storage scdi:config disguise_armor_flash_color_b
 data remove storage scdi:config disguise_armor_recolor
 data remove storage scdi:config disguise_armor_equip_sound
+data remove storage scdi:config disguise_armor_warning
+data remove storage scdi:config disguise_armor_warning_sound
+data remove storage scdi:config disguise_armor_warning_sound_id
+data remove storage scdi:config disguise_inventory_warning
+data remove storage scdi:config disguise_inventory_warning_sound
+data remove storage scdi:config disguise_inventory_warning_sound_id
 data remove storage scdi:config disguise_name
 data remove storage scdi:config disguise_name_bold
 data remove storage scdi:config disguise_name_color
@@ -80,6 +105,7 @@ data remove storage scdi:config dummy_announce_one_shot
 data remove storage scdi:config dummy_one_shot_ignore_tag
 data remove storage scdi:config dummy_announce_time_to_kill
 data remove storage scdi:config dummy_dps_window
+data remove storage scdi:config dummy_announce_range
 data remove storage scdi:config dummy_announce_cheated_death
 data remove storage scdi:config dummy_look_at_player
 data remove storage scdi:config dummy_look_range
@@ -90,6 +116,8 @@ data remove storage scdi:config dummy_max_health
 data remove storage scdi:config dummy_immobile
 data remove storage scdi:config dummy_no_gravity
 data remove storage scdi:config team_request_timeout
+data remove storage scdi:config show_team_on_tab
+data remove storage scdi:config tablist_restore_objective
 data remove storage scdi:config dummy_regen
 data remove storage scdi:config dummy_regen_amount
 data remove storage scdi:config dummy_regen_delay
@@ -101,6 +129,7 @@ data remove storage scdi:config passive_restore
 data remove storage scdi:config placement_revert_radius
 data remove storage scdi:config proximity_distance
 data remove storage scdi:config proximity_retag_distance
+data remove storage scdi:config proximity_role_by_movement
 data remove storage scdi:config proximity_tagging
 data remove storage scdi:config pve_mode
 data remove storage scdi:config reset_on_death
@@ -113,12 +142,16 @@ data remove storage scdi:config show_hotbar_text
 data remove storage scdi:config show_disabled_text
 data remove storage scdi:config show_tag_title
 data remove storage scdi:config show_timer_above_head
+data remove storage scdi:config belowname_restore_objective
 data remove storage scdi:config show_timer_text_display
 data remove storage scdi:config tag_attacker
 data remove storage scdi:config tag_victim
+data remove storage scdi:config hit_tagging_enabled
+data remove storage scdi:config ranged_attacks_tag
 data remove storage scdi:config team_tag_attacker
 data remove storage scdi:config team_tag_victim
 data remove storage scdi:config team_tag_proximity
+data remove storage scdi:config dummy_proximity_tagging
 data remove storage scdi:config no_tag_on_one_shot_kill
 data remove storage scdi:config no_tag_victim_on_one_shot
 data remove storage scdi:config one_shot_ignore_tag
@@ -145,6 +178,16 @@ scoreboard objectives remove scdi_last_combat_end_tick
 scoreboard objectives remove scdi_team_requested_by_id
 scoreboard objectives remove scdi_team_request_tick
 scoreboard objectives remove scdi_untaggable
+scoreboard objectives remove scdi_movement
+scoreboard objectives remove scdi_armor_warning_shown
+scoreboard objectives remove scdi_inventory_warning_shown
+scoreboard objectives remove scdi_one_shot_hit
+scoreboard objectives remove scdi_armor_warning_pref
+scoreboard objectives remove scdi_armor_warning_sound_pref
+scoreboard objectives remove scdi_inventory_warning_pref
+scoreboard objectives remove scdi_inventory_warning_sound_pref
+scoreboard objectives remove scdi_armor_warning_sound_at
+scoreboard objectives remove scdi_inventory_warning_sound_at
 scoreboard objectives remove scdi_owner_id
 scoreboard objectives remove scdi_dummy_hit
 scoreboard objectives remove scdi_dummy_last_hit
@@ -165,13 +208,28 @@ scoreboard objectives remove scdi_display_spawn_tick
 scoreboard objectives remove scdi_item_dur
 scoreboard objectives remove scdi_item_sec
 scoreboard objectives remove scdi_armor_flash_phase
+scoreboard objectives remove scdi_dummy_tag
+scoreboard objectives remove scdi_dummy_elapsed
+scoreboard objectives remove scdi_dummy_combat_simulation
+scoreboard objectives remove scdi_dummy_extinguish_in_combat
+scoreboard objectives remove scdi_dummy_extinguish_on_cheat_death
+scoreboard objectives remove scdi_dummy_cheat_death_invuln
+scoreboard objectives remove scdi_dummy_regen
+scoreboard objectives remove scdi_dummy_cheat_death_sound_totem
+scoreboard objectives remove scdi_dummy_cheat_death_sound_allay
+scoreboard objectives remove scdi_dummy_extinguishing
+scoreboard objectives remove scdi_dummy_extinguish_until
+scoreboard objectives remove scdi_dummy_extinguish_y_offset
 scoreboard objectives remove ScdiHelp
 scoreboard objectives remove ScdiMenu
 scoreboard objectives remove ScdiDummy
 scoreboard objectives remove ScdiDummyMenu
+scoreboard objectives remove ScdiDummyMenu2
 scoreboard objectives remove ScdiTeamRequest
 scoreboard objectives remove ScdiTeamConfirm
 scoreboard objectives remove ScdiTeamReset
 scoreboard objectives remove ScdiDummyAction
+scoreboard objectives remove ScdiPlayerMenu
+scoreboard objectives remove ScdiPlayerMenuAction
 
 tellraw @a ["",{"text":"[SCDI] ","color":"red"},{"text":"Combat Disabled Items has been uninstalled - all scoreboards, storage, and world entities it created have been removed. Delete the datapack from your world's datapacks folder now (this function can't remove itself).","color":"gray"}]

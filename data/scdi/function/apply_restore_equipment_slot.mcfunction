@@ -8,6 +8,13 @@
 # reconstruct the real item (real captured components merged back in) on a
 # throwaway armor stand via a normal entity data merge, then /item replace
 # the player's slot FROM the stand.
+# clear the slot to empty FIRST, as its own step, before setting the real
+# item back - see apply_restore_armor.mcfunction for why (Mojang's
+# equippable-model render cache doesn't always refresh on an atomic
+# occupied-to-occupied replace, leaving the disguise's model visually
+# stuck on the wearer even though the real item is correctly back
+# server-side).
+$item replace entity @s $(slot_arg) with air
 execute at @s run summon minecraft:armor_stand ~ ~ ~ {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["scdi_armor_relay"]}
 $execute as @e[type=minecraft:armor_stand,tag=scdi_armor_relay,limit=1,sort=nearest] run data merge entity @s {equipment:{$(equip_key):{id:"$(orig)",count:$(count),components:$(snapshot)}}}
 $item replace entity @s $(slot_arg) from entity @e[type=minecraft:armor_stand,tag=scdi_armor_relay,limit=1,sort=nearest] $(slot_arg)

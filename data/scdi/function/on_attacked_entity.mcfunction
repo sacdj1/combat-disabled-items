@@ -11,6 +11,15 @@
 execute if data storage scdi:config {debug_hit_messages:1b} at @s run tellraw @a [{"text":"[hit-dbg] on_attacked_entity fired - attacker=","color":"gray"},{"selector":"@s"},{"text":" nearby entities (any type, distance..16): ","color":"gray"}]
 execute if data storage scdi:config {debug_hit_messages:1b} at @s as @e[distance=..16] run tellraw @a [{"text":"[hit-dbg]   nearby: ","color":"gray"},{"selector":"@s"},{"text":" type=","color":"gray"},{"nbt":"id","entity":"@s","interpret":false}]
 
+# whether rangedness (see on_hurt_by_player_ranged.mcfunction) should block
+# tagging this specific hit - computed once here since, unlike the other 3
+# hit-tagging entry points, this file has an EXTRA tag-gated line
+# (spawn_dummy_tag_display below) that doesn't go through the shared
+# on_hurt_by_player_tag_only.mcfunction choke point (which does its own,
+# separate copy of this same check for the two tag_only calls below).
+scoreboard players set $ranged_ok scdi_const 1
+execute if score $hit_was_ranged scdi_const matches 1 unless data storage scdi:config {ranged_attacks_tag:1b} run scoreboard players set $ranged_ok scdi_const 0
+
 execute if data storage scdi:config {pve_mode:1b} run function scdi:on_hurt_by_player_tag_only
 
 # a test dummy simulates a real player for tagging purposes, regardless of
@@ -50,7 +59,7 @@ execute at @s if entity @e[type=minecraft:mannequin,tag=scdi_dummy,distance=..16
 # exactly what was causing one-shot/tag feedback to show up on the wrong
 # dummy. the radius itself still needs to stay wide for the mace-smash case
 # above - this only narrows WHICH of the matches actually gets acted on.
-execute at @s as @e[type=minecraft:mannequin,tag=scdi_dummy,distance=..16,sort=nearest,limit=1] if data storage scdi:config {tag_attacker:1b} if data storage scdi:config {dummy_tagging:1b} if score $should_tag_attacker scdi_const matches 1 run function scdi:spawn_dummy_tag_display
+execute at @s as @e[type=minecraft:mannequin,tag=scdi_dummy,distance=..16,sort=nearest,limit=1] if data storage scdi:config {tag_attacker:1b} if data storage scdi:config {dummy_tagging:1b} if score $should_tag_attacker scdi_const matches 1 if score $ranged_ok scdi_const matches 1 run function scdi:spawn_dummy_tag_display
 
 # dummy hit handling (one-shot announcement + armor-drop-on-death) - always
 # checked regardless of the settings above, own gates are per-effect inside
@@ -62,3 +71,6 @@ execute at @s as @e[type=minecraft:mannequin,tag=scdi_dummy,distance=..16,sort=n
 
 # reset the advancement so it can fire again on the next hit
 advancement revoke @s only scdi:attacked_entity
+
+# see on_hurt_by_player.mcfunction for why this cleanup is always safe here
+scoreboard players set $hit_was_ranged scdi_const 0

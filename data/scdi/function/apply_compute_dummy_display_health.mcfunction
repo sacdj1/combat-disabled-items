@@ -15,7 +15,7 @@ execute store result storage scdi:tmp9 max int 1 run attribute @s minecraft:max_
 
 # invincible: shows the value relative to scdi_dummy_invincible_floor -
 # looks and behaves exactly like a normal player's health bar, refilling
-# to 20 every time apply_dummy_invincible_segment_topoff.mcfunction fires.
+# to 20 every time apply_dummy_invincible_save.mcfunction fires.
 execute if score @s scdi_dummy_invincible matches 1.. store result score $dummy_display_hp scdi_const run data get entity @s Health 1
 execute if score @s scdi_dummy_invincible matches 1.. run scoreboard players operation $dummy_display_hp scdi_const -= @s scdi_dummy_invincible_floor
 # defensive clamp to 0-20 - healing (menu "Heal to full", passive regen)

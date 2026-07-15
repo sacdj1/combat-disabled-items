@@ -53,4 +53,21 @@ execute if data storage scdi:config {dummy_damage_numbers:1b} if score @s scdi_d
 execute if data storage scdi:config {dummy_damage_numbers:1b} if score @s scdi_dummy_dmg matches 1.. run scoreboard players operation $dummy_dmg_tenths scdi_const %= $ten scdi_const
 execute if data storage scdi:config {dummy_damage_numbers:1b} if score @s scdi_dummy_dmg matches 1.. run function scdi:spawn_dummy_damage_display
 
+# dummy combat-tag simulation (per-dummy toggle, on by default for newly
+# spawned dummies - see dummy_menu_show.mcfunction/load.mcfunction's
+# dummy_combat_simulation comment) - mirrors a real player's own combat
+# lock: getting hit starts/refreshes THIS DUMMY'S own timer (independent
+# of whether the ATTACKER also gets tagged, see dummy_tagging), during
+# which its worn escape items (elytra, custom armor rules) get disguised
+# exactly like a real player's would, then restored once the timer runs
+# out. always retags on every hit while already tagged, same as a real
+# player's default retag_resets_timer behavior. uses the dummy's own
+# real-time /stopwatch (see restart_dummy_stopwatch.mcfunction/
+# dummy_combat_tick.mcfunction), same mechanism a real player's own combat
+# lock uses - NOT tick-count math, which ran slow relative to real time
+# under any server lag.
+execute if score @s scdi_dummy_combat_simulation matches 1.. run scoreboard players set @s scdi_dummy_tag 1
+execute if score @s scdi_dummy_combat_simulation matches 1.. store result storage scdi:tmp10 id int 1 run scoreboard players get @s scdi_dummy_id
+execute if score @s scdi_dummy_combat_simulation matches 1.. run function scdi:restart_dummy_stopwatch with storage scdi:tmp10
+
 function scdi:apply_check_dummy_hit2

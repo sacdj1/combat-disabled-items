@@ -12,7 +12,8 @@
           },
           "type": {
             "tags": [
-              {"id": "scdi:self_attributable", "expected": false}
+              {"id": "scdi:self_attributable", "expected": false},
+              {"id": "minecraft:is_projectile", "expected": false}
             ]
           }
         }

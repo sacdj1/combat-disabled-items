@@ -186,6 +186,13 @@ its own gate (`tag_victim` / `tag_attacker` / `pve_mode`) before reaching it.
   place); if you configure a placeable, common survival block as the
   disguise item instead, a combat-tagged player placing a *real* block of
   that same type would also get reverted.
+- Disabled/disguised armor might look funky. Worn armor gets its visual
+  appearance from `disguise_armor_model` (default `minecraft:leather`,
+  a safe vanilla fallback), not from a texture this pack ships - if you set
+  it to something that expects a resource pack (a custom equipment asset),
+  players without that resource pack installed will see it render oddly.
+  Stick with a plain vanilla material here unless you're also distributing
+  a matching resource pack to everyone on the server.
 
 ## Configuration
 
@@ -657,6 +664,36 @@ its own gate (`tag_victim` / `tag_attacker` / `pve_mode`) before reaching it.
   /data modify storage scdi:config teleport_command set value "teleport"   (default)
   /data modify storage scdi:config teleport_command set value "tp"
   ```
+
+## Sharing your config
+
+The entire OP config is one NBT compound tag living at `scdi:config` in the
+world's data storage - not a file on disk, so there's no config file to copy
+between worlds. To share it, export the whole compound as text and re-import
+it on the other end:
+
+1. On the world with the config you want to share, run:
+   ```
+   /data get storage scdi:config
+   ```
+   This prints the full compound tag to chat/console as one long line of
+   text (e.g. `{allow_dummy_trigger:0b,disguise_item:"minecraft:stick",...}`).
+2. Copy everything from the opening `{` to the closing `}` (the game usually
+   prefixes it with something like `scdi has the following...:` - don't
+   include that part).
+3. On the destination world (same datapack installed and loaded at least
+   once, so the objectives/storage exist), run:
+   ```
+   /data merge storage scdi:config {...paste here...}
+   ```
+   `merge` overwrites every key present in the pasted compound and leaves
+   anything not mentioned untouched - since a full `/data get` dump includes
+   every key, this effectively makes the destination's config identical to
+   the source's.
+
+No datapack function does this automatically (vanilla commands can't write
+to a file on disk), so it's always a manual copy/paste of one command's
+output into another command.
 
 ## Debugging
 

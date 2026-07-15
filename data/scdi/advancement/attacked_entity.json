@@ -14,7 +14,14 @@
               }
             }
           }
-        ]
+        ],
+        "damage": {
+          "type": {
+            "tags": [
+              {"id": "minecraft:is_projectile", "expected": false}
+            ]
+          }
+        }
       }
     }
   },

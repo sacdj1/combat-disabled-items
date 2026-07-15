@@ -1,5 +1,5 @@
-# called "at" a dummy right as it cheats death on a 20-point segment (see
-# apply_dummy_invincible_segment_topoff.mcfunction) - same "execute ...
+# called "at" a dummy right as it cheats death (see
+# apply_dummy_invincible_save.mcfunction) - same "execute ...
 # summon ... run function ..." technique as the other dummy displays.
 # passes the dummy's own scdi_dummy_id through so
 # apply_dummy_display_follow_tick2.mcfunction can keep it glued to the

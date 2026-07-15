@@ -22,6 +22,11 @@ scoreboard players set $mortal_lethal scdi_const 0
 execute if score @s scdi_dummy_sim_hp matches ..0 run scoreboard players set $mortal_lethal scdi_const 1
 execute if score @s scdi_health matches ..0 run scoreboard players set $mortal_lethal scdi_const 1
 
+# fetched once here, reused below by every chat announcement this file
+# fires (dummy_announce_range - see load.mcfunction) - scopes them to
+# nearby players instead of the whole server.
+execute store result storage scdi:tmp26 range int 1 run data get storage scdi:config dummy_announce_range 1
+
 # debugging aid (debug_hit_messages, default off) - shows the exact values
 # this file's lethal-hit decision is based on.
 execute if data storage scdi:config {debug_hit_messages:1b} run tellraw @a [{"text":"[hit-dbg] apply_check_dummy_hit2 - scdi_health(score)=","color":"gray"},{"score":{"name":"@s","objective":"scdi_health"}},{"text":" sim_hp(tenths)=","color":"gray"},{"score":{"name":"@s","objective":"scdi_dummy_sim_hp"}},{"text":" mortal_lethal=","color":"gray"},{"score":{"name":"$mortal_lethal","objective":"scdi_const"}},{"text":" invincible=","color":"gray"},{"score":{"name":"@s","objective":"scdi_dummy_invincible"}}]
@@ -47,8 +52,8 @@ execute unless score @s scdi_dummy_invincible matches 1.. if data storage scdi:c
 # chat fallback alongside the floating display - not "instead of", so it
 # still shows even for players who can't see the text_display for whatever
 # reason (rendering, distance, etc).
-execute unless score @s scdi_dummy_invincible matches 1.. if data storage scdi:config {dummy_announce_one_shot:1b} if data storage scdi:config {dummy_one_shot_ignore_tag:1b} if score $mortal_lethal scdi_const matches 1 run tellraw @a {"text":"⚔ Dummy was ONE-SHOT!","color":"red","bold":true}
-execute unless score @s scdi_dummy_invincible matches 1.. if data storage scdi:config {dummy_announce_one_shot:1b} unless data storage scdi:config {dummy_one_shot_ignore_tag:1b} unless score @s scdi_dummy_hit matches 1.. if score $mortal_lethal scdi_const matches 1 run tellraw @a {"text":"⚔ Dummy was ONE-SHOT!","color":"red","bold":true}
+execute unless score @s scdi_dummy_invincible matches 1.. if data storage scdi:config {dummy_announce_one_shot:1b} if data storage scdi:config {dummy_one_shot_ignore_tag:1b} if score $mortal_lethal scdi_const matches 1 run function scdi:announce_dummy_one_shot with storage scdi:tmp26
+execute unless score @s scdi_dummy_invincible matches 1.. if data storage scdi:config {dummy_announce_one_shot:1b} unless data storage scdi:config {dummy_one_shot_ignore_tag:1b} unless score @s scdi_dummy_hit matches 1.. if score $mortal_lethal scdi_const matches 1 run function scdi:announce_dummy_one_shot with storage scdi:tmp26
 scoreboard players set @s scdi_dummy_hit 1
 
 # passive regen (dummy_regen_tick.mcfunction) only kicks in once this many
@@ -66,23 +71,38 @@ scoreboard players operation @s scdi_dummy_last_hit = $ticks scdi_const
 # point of invincible is that a single big hit (or a sustained combo)
 # should never outright kill it either, just eat into the segment pool
 # like any other damage.
-execute at @s if score @s scdi_dummy_invincible matches 1.. if score @s scdi_health <= @s scdi_dummy_invincible_floor run function scdi:apply_dummy_invincible_segment_check
+# simplified from a gradually-depleting segmented pool to an always-heal-
+# to-full backstop - a segmented pool still relies on this same synchronous
+# "catch it before the game's own death handling" race for EVERY segment,
+# so a big enough single hit (a mace smash, especially) could still lose
+# that race partway through the pool and kill the dummy for real. always
+# jumping straight to the full heal (apply_dummy_invincible_save.mcfunction)
+# doesn't eliminate the race (nothing command-only can), but it does mean
+# there's only ever ONE kind of recovery to reason about, and the brief
+# invulnerability window it can trigger (dummy_cheat_death_invuln, now
+# firing on every near-death instead of rarely) gives real protection
+# against a rapid follow-up hit re-triggering the race again immediately.
+execute at @s if score @s scdi_dummy_invincible matches 1.. if score @s scdi_health <= @s scdi_dummy_invincible_floor run function scdi:apply_dummy_invincible_save
 
 # time-to-kill readout (optional, dummy_announce_time_to_kill, default on):
 # how long it took from the hit that took this dummy off full health
 # (scdi_dummy_encounter_start_tick - the same "fresh encounter" marker DPS
 # tracking already resets, see apply_check_dummy_hit.mcfunction) to this
-# lethal hit. computed as whole seconds + tenths ($twenty/$ten are shared
-# scratch constants set once in load.mcfunction) since ticks alone aren't a
-# meaningful unit to show a player.
+# lethal hit. computed as whole seconds + hundredths ($twenty/$five are
+# shared scratch constants set once in load.mcfunction) since ticks alone
+# aren't a meaningful unit to show a player. hundredths, not tenths - a
+# single tick is exactly 1/20s = 0.05s, so (ticks-within-the-second) * 5
+# lands on an exact hundredths value (0, 5, 10, ..., 95) with no rounding
+# loss, whereas the old tenths math truncated on odd tick counts. this is
+# as fine-grained as a 20-tick server can measure - true milliseconds
+# aren't observable, only whole ticks (50ms each) are.
 execute if score $mortal_lethal scdi_const matches 1 unless score @s scdi_dummy_invincible matches 1.. if data storage scdi:config {dummy_announce_time_to_kill:1b} run scoreboard players operation $ttk_ticks scdi_const = $ticks scdi_const
 execute if score $mortal_lethal scdi_const matches 1 unless score @s scdi_dummy_invincible matches 1.. if data storage scdi:config {dummy_announce_time_to_kill:1b} run scoreboard players operation $ttk_ticks scdi_const -= @s scdi_dummy_encounter_start_tick
 execute if score $mortal_lethal scdi_const matches 1 unless score @s scdi_dummy_invincible matches 1.. if data storage scdi:config {dummy_announce_time_to_kill:1b} run scoreboard players operation $ttk_whole scdi_const = $ttk_ticks scdi_const
 execute if score $mortal_lethal scdi_const matches 1 unless score @s scdi_dummy_invincible matches 1.. if data storage scdi:config {dummy_announce_time_to_kill:1b} run scoreboard players operation $ttk_whole scdi_const /= $twenty scdi_const
-execute if score $mortal_lethal scdi_const matches 1 unless score @s scdi_dummy_invincible matches 1.. if data storage scdi:config {dummy_announce_time_to_kill:1b} run scoreboard players operation $ttk_tenths scdi_const = $ttk_ticks scdi_const
-execute if score $mortal_lethal scdi_const matches 1 unless score @s scdi_dummy_invincible matches 1.. if data storage scdi:config {dummy_announce_time_to_kill:1b} run scoreboard players operation $ttk_tenths scdi_const %= $twenty scdi_const
-execute if score $mortal_lethal scdi_const matches 1 unless score @s scdi_dummy_invincible matches 1.. if data storage scdi:config {dummy_announce_time_to_kill:1b} run scoreboard players operation $ttk_tenths scdi_const *= $ten scdi_const
-execute if score $mortal_lethal scdi_const matches 1 unless score @s scdi_dummy_invincible matches 1.. if data storage scdi:config {dummy_announce_time_to_kill:1b} run scoreboard players operation $ttk_tenths scdi_const /= $twenty scdi_const
-execute if score $mortal_lethal scdi_const matches 1 unless score @s scdi_dummy_invincible matches 1.. if data storage scdi:config {dummy_announce_time_to_kill:1b} run tellraw @a ["",{"text":"☠ Dummy killed in ","color":"gray"},{"score":{"name":"$ttk_whole","objective":"scdi_const"},"color":"yellow"},{"text":".","color":"gray"},{"score":{"name":"$ttk_tenths","objective":"scdi_const"},"color":"yellow"},{"text":"s (full health to dead)","color":"gray"}]
+execute if score $mortal_lethal scdi_const matches 1 unless score @s scdi_dummy_invincible matches 1.. if data storage scdi:config {dummy_announce_time_to_kill:1b} run scoreboard players operation $ttk_hundredths scdi_const = $ttk_ticks scdi_const
+execute if score $mortal_lethal scdi_const matches 1 unless score @s scdi_dummy_invincible matches 1.. if data storage scdi:config {dummy_announce_time_to_kill:1b} run scoreboard players operation $ttk_hundredths scdi_const %= $twenty scdi_const
+execute if score $mortal_lethal scdi_const matches 1 unless score @s scdi_dummy_invincible matches 1.. if data storage scdi:config {dummy_announce_time_to_kill:1b} run scoreboard players operation $ttk_hundredths scdi_const *= $five scdi_const
+execute if score $mortal_lethal scdi_const matches 1 unless score @s scdi_dummy_invincible matches 1.. if data storage scdi:config {dummy_announce_time_to_kill:1b} run function scdi:announce_dummy_ttk with storage scdi:tmp26
 
 execute at @s if score $mortal_lethal scdi_const matches 1 unless score @s scdi_dummy_invincible matches 1.. run function scdi:apply_drop_dummy_armor

@@ -15,5 +15,9 @@ scoreboard players set $armor_flash_changed scdi_const 0
 execute unless score @s scdi_armor_flash_phase = $armor_flash_new_phase scdi_const run scoreboard players set $armor_flash_changed scdi_const 1
 scoreboard players operation @s scdi_armor_flash_phase = $armor_flash_new_phase scdi_const
 
-execute if score $armor_flash_changed scdi_const matches 1 if score @s scdi_armor_flash_phase matches 1 run function scdi:apply_disguise_armor_flash_recolor {color:16776960}
-execute if score $armor_flash_changed scdi_const matches 1 unless score @s scdi_armor_flash_phase matches 1 run function scdi:apply_disguise_armor_flash_recolor {color:16711680}
+# same disguise_armor_flash_color_a/_b config the particle flash uses (see
+# load.mcfunction) - dyed_color wants the packed int directly, no
+# unpacking needed here unlike the particle path.
+execute if score $armor_flash_changed scdi_const matches 1 if score @s scdi_armor_flash_phase matches 1 store result storage scdi:tmp29 color int 1 run data get storage scdi:config disguise_armor_flash_color_b 1
+execute if score $armor_flash_changed scdi_const matches 1 unless score @s scdi_armor_flash_phase matches 1 store result storage scdi:tmp29 color int 1 run data get storage scdi:config disguise_armor_flash_color_a 1
+execute if score $armor_flash_changed scdi_const matches 1 run function scdi:apply_disguise_armor_flash_recolor with storage scdi:tmp29

@@ -32,6 +32,20 @@ execute if score $dps_elapsed scdi_const < $dps_window scdi_const run scoreboard
 scoreboard players operation $dps_num scdi_const = @s scdi_dummy_total_dmg
 scoreboard players operation $dps_num scdi_const *= $two scdi_const
 scoreboard players operation $dps_num scdi_const /= $dps_elapsed scdi_const
+
+# without this, DPS is a pure cumulative average (total damage / total time
+# since the encounter started) - once you stop hitting it, that number
+# doesn't reflect "nothing's happening right now", it just slowly dilutes
+# toward 0 as elapsed time keeps growing under a frozen damage total,
+# staying visibly elevated for a while after the last real hit. snapping
+# straight to 0 once it's been dummy_dps_window ticks since the last hit
+# (scdi_dummy_last_hit - same score dummy_regen_tick.mcfunction already
+# tracks for its own delay check) makes the readout promptly reflect idle
+# time instead of lingering on a stale rate.
+scoreboard players operation $dps_idle scdi_const = $ticks scdi_const
+scoreboard players operation $dps_idle scdi_const -= @s scdi_dummy_last_hit
+execute if score $dps_idle scdi_const >= $dps_window scdi_const run scoreboard players set $dps_num scdi_const 0
+
 execute store result storage scdi:tmp9 dps int 1 run scoreboard players get $dps_num scdi_const
 
 function scdi:apply_update_dummy_health_display_text with storage scdi:tmp9

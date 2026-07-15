@@ -1,0 +1,31 @@
+{
+  "criteria": {
+    "req": {
+      "trigger": "minecraft:player_hurt_entity",
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:inverted",
+            "term": {
+              "condition": "minecraft:entity_properties",
+              "entity": "this",
+              "predicate": {
+                "entity_type": "minecraft:player"
+              }
+            }
+          }
+        ],
+        "damage": {
+          "type": {
+            "tags": [
+              {"id": "minecraft:is_projectile", "expected": true}
+            ]
+          }
+        }
+      }
+    }
+  },
+  "rewards": {
+    "function": "scdi:on_attacked_entity_ranged"
+  }
+}

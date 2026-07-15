@@ -50,9 +50,18 @@
 # disguise_armor_equip_sound (default a soft note, not the harsh default
 # armor clink) so that at minimum the ONE guaranteed sound - this initial
 # swap - is as unobtrusive as possible, whether or not recolor is on.
+#
+# Curse of Binding was tried here briefly to block manual unequip mid-combat,
+# but removed again - the restore path needs to correctly revert the real
+# item's appearance (both inventory icon and worn model) regardless of
+# whether it gets moved to inventory first, rather than just preventing
+# that from happening. see apply_restore_hotbar_slot.mcfunction for the
+# loose-in-inventory restore path this depends on.
 execute at @s run summon minecraft:armor_stand ~ ~ ~ {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["scdi_armor_relay"]}
 $execute as @e[type=minecraft:armor_stand,tag=scdi_armor_relay,limit=1,sort=nearest] run data merge entity @s {equipment:{chest:{id:"$(item)",count:1,components:{"minecraft:custom_data":{"scdi":{"null":true,"orig":"$(orig)","snapshot":$(snapshot),"real_count":$(real_count)}},"minecraft:item_model":"$(model)","minecraft:custom_name":{"text":"$(name)","color":"$(name_color)","bold":$(name_bold),"italic":$(name_italic)},"minecraft:enchantment_glint_override":$(glint),"minecraft:dyed_color":16711680,"minecraft:equippable":{"slot":"chest","asset_id":"$(armor_model)","equip_sound":"$(armor_sound)"}}}}}
 item replace entity @s armor.chest from entity @e[type=minecraft:armor_stand,tag=scdi_armor_relay,limit=1,sort=nearest] armor.chest
 kill @e[type=minecraft:armor_stand,tag=scdi_armor_relay,limit=1,sort=nearest]
 
 execute if data storage scdi:config {debug_custom_items:1b} run tellraw @s [{"text":"[elytra] apply_nullify_armor done - chest now = ","color":"gray"},{"nbt":"equipment.chest.id","entity":"@s","interpret":false}]
+
+function scdi:check_armor_warning

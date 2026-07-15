@@ -1,6 +1,7 @@
-# per-dummy setting, no global default - see apply_dummy_pin_tick.mcfunction/
-# dummy_menu_show.mcfunction. captures the dummy's CURRENT position (at
-# *1000 scale for sub-block precision - see load.mcfunction's
+# per-dummy setting - see apply_dummy_pin_tick.mcfunction/
+# dummy_menu_show.mcfunction, and dummy_pinned_default in /menu -> Misc for
+# the default new ones spawn with. captures the dummy's CURRENT position
+# (at *1000 scale for sub-block precision - see load.mcfunction's
 # scdi_dummy_pinned comment) as the spot it gets teleported back to every
 # tick from now on, then flips the flag on.
 execute unless data storage scdi:config {allow_dummy_trigger:1b} run tellraw @s {"text":"Dummy management is currently disabled by an admin.","color":"red"}

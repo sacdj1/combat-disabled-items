@@ -11,7 +11,14 @@
               "entity_type": "minecraft:player"
             }
           }
-        ]
+        ],
+        "damage": {
+          "type": {
+            "tags": [
+              {"id": "minecraft:is_projectile", "expected": false}
+            ]
+          }
+        }
       }
     }
   },

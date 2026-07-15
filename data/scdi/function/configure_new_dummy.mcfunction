@@ -19,6 +19,16 @@ execute if data storage scdi:config {dummy_no_gravity:1b} run data merge entity 
 execute unless data storage scdi:config {dummy_no_gravity:1b} run data merge entity @s {NoGravity:0b}
 scoreboard players add $next_dummy_id scdi_const 1
 scoreboard players operation @s scdi_dummy_id = $next_dummy_id scdi_const
+
+# gives this dummy its own real-time combat-lock stopwatch (see
+# create_dummy_stopwatch.mcfunction/dummy_combat_tick.mcfunction) - matches
+# a real player's own /stopwatch-based timing exactly, rather than
+# approximating elapsed time from the tick counter (which runs slow
+# relative to real time under any server lag, making a dummy's combat lock
+# outlast a real player's equivalent duration).
+execute store result storage scdi:tmp10 id int 1 run scoreboard players get @s scdi_dummy_id
+function scdi:create_dummy_stopwatch with storage scdi:tmp10
+
 execute if data storage scdi:config {dummy_immobile:1b} run attribute @s minecraft:knockback_resistance base set 1.0
 execute if data storage scdi:config {dummy_show_health:1b} run function scdi:spawn_dummy_health_display
 
@@ -48,3 +58,40 @@ execute store result score @s scdi_dummy_sim_hp run data get storage scdi:config
 # instead of an unset score.
 execute store result score @s scdi_health run data get entity @s Health 1
 execute store result score @s scdi_dummy_health_fine run data get entity @s Health 10
+
+# seeds this dummy's own per-dummy toggles from the "new dummy default"
+# config keys (see load.mcfunction) - each one is independently
+# adjustable afterward via the dummy trigger menu, this just sets the
+# starting point. "data get <boolean path> 1" reads a stored 0b/1b as a
+# plain 0/1 int score.
+execute store result score @s scdi_dummy_combat_simulation run data get storage scdi:config dummy_combat_simulation 1
+execute store result score @s scdi_dummy_extinguish_in_combat run data get storage scdi:config dummy_extinguish_in_combat 1
+execute store result score @s scdi_dummy_extinguish_on_cheat_death run data get storage scdi:config dummy_extinguish_on_cheat_death 1
+execute store result score @s scdi_dummy_cheat_death_invuln run data get storage scdi:config dummy_cheat_death_invulnerability 1
+execute store result score @s scdi_dummy_regen run data get storage scdi:config dummy_regen 1
+execute store result score @s scdi_dummy_cheat_death_sound_totem run data get storage scdi:config dummy_cheat_death_sound_totem 1
+execute store result score @s scdi_dummy_cheat_death_sound_allay run data get storage scdi:config dummy_cheat_death_sound_allay 1
+
+# scoreboard scores are integers only, so this one (a particle id string)
+# lives directly as custom NBT on the dummy entity instead of a score -
+# vanilla ignores unrecognized top-level entity NBT keys, so a plain tag
+# name works fine, same trick this pack already uses elsewhere for
+# entity-attached scratch data. seeded from the global default
+# (dummy_cheat_death_particle) same as every other per-dummy setting above.
+data modify entity @s ScdiCheatDeathParticle set from storage scdi:config dummy_cheat_death_particle
+
+# dummy_invincible_default (off by default, spawns mortal) - reuses the
+# exact same setup menu/dummy_menu_invincible_on.mcfunction applies to an
+# existing dummy (big health pool + starts the "cheated death" segment
+# cycle), just applied here instead if requested at spawn time.
+execute if data storage scdi:config {dummy_invincible_default:1b} run scoreboard players set @s scdi_dummy_invincible 1
+execute if data storage scdi:config {dummy_invincible_default:1b} run function scdi:apply_dummy_invincible_max_health with storage scdi:config
+
+# dummy_pinned_default (off by default) - same setup
+# menu/dummy_menu_pin_on.mcfunction applies to an existing dummy, just
+# using its own just-summoned position as the pin point instead of
+# whatever position it happened to be standing in when toggled on later.
+execute if data storage scdi:config {dummy_pinned_default:1b} store result score @s scdi_dummy_pin_x run data get entity @s Pos[0] 1000
+execute if data storage scdi:config {dummy_pinned_default:1b} store result score @s scdi_dummy_pin_y run data get entity @s Pos[1] 1000
+execute if data storage scdi:config {dummy_pinned_default:1b} store result score @s scdi_dummy_pin_z run data get entity @s Pos[2] 1000
+execute if data storage scdi:config {dummy_pinned_default:1b} run scoreboard players set @s scdi_dummy_pinned 1

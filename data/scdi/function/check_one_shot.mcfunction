@@ -12,6 +12,16 @@
 # who dealt the damage (only that it was *a* player - see the README's note
 # on tag_attacker/tag_victim for the same limitation), so the announcement
 # names the victim only, not who did it.
+#
+# scdi_one_shot_hit (see load.mcfunction) is the REAL single-hit gate here,
+# and applies unconditionally regardless of one_shot_ignore_tag - the
+# caller's scdi_tag-based gate is what that setting bypasses, not this one.
+# without an independent gate here, one_shot_ignore_tag had nothing left
+# verifying this was actually the first hit landed on @s, so every kill -
+# any number of hits - announced as a "one shot" once that setting was on.
+execute if score @s scdi_one_shot_hit matches 1 run return 0
+scoreboard players set @s scdi_one_shot_hit 1
+
 execute if data storage scdi:config {announce_one_shot:1b} store result score @s scdi_health run data get entity @s Health 100
 
 # optional tightening (one_shot_cooldown_enabled, off by default): also

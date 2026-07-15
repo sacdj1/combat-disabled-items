@@ -16,9 +16,9 @@
 $attribute @s minecraft:max_health base set $(dummy_max_health)
 execute store result entity @s Health float 1 run attribute @s minecraft:max_health get
 
-# starts the "cheated death" segment cycle - first trigger point is 20
-# (a normal player's health) below the fresh max, see
-# apply_check_dummy_hit2.mcfunction/apply_dummy_invincible_segment_check.mcfunction
-# for where this gets checked and stepped down further.
+# sets the "cheated death" trigger point to 20 (a normal player's health)
+# below the fresh max - see apply_check_dummy_hit2.mcfunction/
+# apply_dummy_invincible_save.mcfunction for where this gets checked and
+# reset back to the same value after every heal-back.
 execute store result score @s scdi_dummy_invincible_floor run attribute @s minecraft:max_health get
 scoreboard players remove @s scdi_dummy_invincible_floor 20
