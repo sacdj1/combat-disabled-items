@@ -1,6 +1,10 @@
 # called with {item:"minecraft:...",enchant:"..."} from check_custom_item_slots.mcfunction -
 # checks all 36 inventory slots for this specific custom item, unrolled the same
-# way as scan_inventory.mcfunction since there's no real loop construct.
+# way as scan_hotbar.mcfunction/scan_extended_inventory.mcfunction since
+# there's no real loop construct. this is gated by the custom item RULE's
+# own per-item scan_inventory flag (disguise_targets[i].scan_inventory),
+# not the global scan_hotbar/scan_extended_inventory settings - a
+# different, independent toggle despite the similar name.
 $function scdi:check_custom_item_hotbar_slot {slot:0,slot_arg:"hotbar.0",item:"$(item)",enchant:"$(enchant)"}
 $function scdi:check_custom_item_hotbar_slot {slot:1,slot_arg:"hotbar.1",item:"$(item)",enchant:"$(enchant)"}
 $function scdi:check_custom_item_hotbar_slot {slot:2,slot_arg:"hotbar.2",item:"$(item)",enchant:"$(enchant)"}

@@ -8,8 +8,10 @@
 # counter instead ($ticks * 50ms), which quietly ran slow relative to real
 # time under any server lag, making a dummy's combat lock outlast a real
 # player's equivalent duration.
-execute store result storage scdi:tmp10 id int 1 run scoreboard players get @s scdi_dummy_id
-function scdi:query_dummy_stopwatch with storage scdi:tmp10
+# throttled to $combat_tick_interval ticks, same as combat_tick.mcfunction's
+# real-player equivalent.
+execute if score $combat_tick_mod scdi_const matches 0 store result storage scdi:tmp10 id int 1 run scoreboard players get @s scdi_dummy_id
+execute if score $combat_tick_mod scdi_const matches 0 run function scdi:query_dummy_stopwatch with storage scdi:tmp10
 
 # debugging aid (debug_hit_messages, default off - see /menu -> Detection) -
 # noisy (every tick a dummy is tagged), only turn on briefly to check

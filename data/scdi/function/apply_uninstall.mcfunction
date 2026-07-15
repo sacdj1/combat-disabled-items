@@ -4,15 +4,16 @@
 # per-player scdi_id/scdi_tag) are wiped out from under them.
 
 # step 1: restore every currently-disguised item for every ONLINE player,
-# unconditionally - bypasses the scan_inventory setting (forced on here
-# regardless) since this is the last chance before the pack's own tick-based
-# restore logic stops running entirely. can only reach players who are
-# currently online - if someone offline has a disguised item sitting in
-# their inventory, they'll need to log in (with the pack still installed)
-# and either wait out combat or run this again before you actually delete
-# the datapack files.
+# unconditionally - bypasses the scan_hotbar/scan_extended_inventory
+# settings (forced on here regardless) since this is the last chance
+# before the pack's own tick-based restore logic stops running entirely.
+# can only reach players who are currently online - if someone offline has
+# a disguised item sitting in their inventory, they'll need to log in
+# (with the pack still installed) and either wait out combat or run this
+# again before you actually delete the datapack files.
 execute as @a at @s run function scdi:restore_check
-execute as @a at @s run function scdi:restore_inventory
+execute as @a at @s run function scdi:restore_hotbar
+execute as @a at @s run function scdi:restore_extended_inventory
 
 # step 2: revoke any pack advancement a player might currently be holding
 # mid-tick (these are normally revoked the instant their reward fires, so
@@ -137,7 +138,8 @@ data remove storage scdi:config retag_resets_timer
 data remove storage scdi:config safe_pitch
 data remove storage scdi:config safe_sound
 data remove storage scdi:config safe_volume
-data remove storage scdi:config scan_inventory
+data remove storage scdi:config scan_hotbar
+data remove storage scdi:config scan_extended_inventory
 data remove storage scdi:config show_hotbar_text
 data remove storage scdi:config show_disabled_text
 data remove storage scdi:config show_tag_title

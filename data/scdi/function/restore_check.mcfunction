@@ -18,4 +18,5 @@ function scdi:check_restore_equipment_slot {equip_key:"chest",slot_arg:"armor.ch
 function scdi:check_restore_equipment_slot {equip_key:"legs",slot_arg:"armor.legs"}
 function scdi:check_restore_equipment_slot {equip_key:"feet",slot_arg:"armor.feet"}
 
-execute if data storage scdi:config {scan_inventory:1b} run function scdi:restore_inventory
+execute if data storage scdi:config {scan_hotbar:1b} run function scdi:restore_hotbar
+execute if data storage scdi:config {scan_extended_inventory:1b} run function scdi:restore_extended_inventory

@@ -13,9 +13,7 @@ scoreboard players add @a scdi_team 0
 
 # global tick counter, used to throttle each expensive periodic check below
 # independently, on its own interval (see load.mcfunction: scan_interval,
-# passive_restore_interval, proximity_interval). the held-item disguise
-# check itself always runs every tick regardless - only the heavier
-# inventory-scan/custom-item/passive-restore/proximity checks respect these.
+# passive_restore_interval, proximity_interval, nullify_interval).
 scoreboard players add $ticks scdi_const 1
 scoreboard players operation $scan_mod scdi_const = $ticks scdi_const
 scoreboard players operation $scan_mod scdi_const %= $scan_interval scdi_const
@@ -23,8 +21,16 @@ scoreboard players operation $passive_mod scdi_const = $ticks scdi_const
 scoreboard players operation $passive_mod scdi_const %= $passive_restore_interval scdi_const
 scoreboard players operation $proximity_mod scdi_const = $ticks scdi_const
 scoreboard players operation $proximity_mod scdi_const %= $proximity_interval scdi_const
+scoreboard players operation $nullify_mod scdi_const = $ticks scdi_const
+scoreboard players operation $nullify_mod scdi_const %= $nullify_interval scdi_const
+scoreboard players operation $combat_tick_mod scdi_const = $ticks scdi_const
+scoreboard players operation $combat_tick_mod scdi_const %= $combat_tick_interval scdi_const
 scoreboard players operation $dummy_regen_mod scdi_const = $ticks scdi_const
 scoreboard players operation $dummy_regen_mod scdi_const %= $dummy_regen_interval scdi_const
+scoreboard players operation $dummy_look_mod scdi_const = $ticks scdi_const
+scoreboard players operation $dummy_look_mod scdi_const %= $dummy_look_interval scdi_const
+scoreboard players operation $dummy_display_mod scdi_const = $ticks scdi_const
+scoreboard players operation $dummy_display_mod scdi_const %= $dummy_display_interval scdi_const
 
 # immediately release anyone who becomes exempt while already mid-combat -
 # an admin getting flagged scdi_untaggable, or a player switching into
@@ -142,15 +148,18 @@ execute as @a[scores={ScdiPlayerMenuAction=1..}] run scoreboard players set @s S
 # scdi_team_requested_by_id is normally unset for almost everyone.
 function scdi:team_request_expiry_tick
 
-# Misc: dummy look-at-player (off by default, see load.mcfunction) - runs
-# every tick, not on an interval, since there's normally only a handful of
-# dummies at most and choppy head-tracking would look worse than the
-# negligible cost of checking every tick.
-execute if data storage scdi:config {dummy_look_at_player:1b} run function scdi:dummy_look_tick
+# Misc: dummy look-at-player (on by default, see load.mcfunction) -
+# throttled to $dummy_look_interval ticks (default 2, still smooth) rather
+# than every tick - cost scales with dummy count (a nearest-player search
+# PLUS a facing-angle recompute per dummy), which mattered once testing
+# started spawning several dummies at once.
+execute if score $dummy_look_mod scdi_const matches 0 if data storage scdi:config {dummy_look_at_player:1b} run function scdi:dummy_look_tick
 
 # Misc: dummy item pickup/equip (off by default, see load.mcfunction) -
-# every tick, same reasoning as the look-at check above.
-execute if data storage scdi:config {dummy_pickup_items:1b} run function scdi:dummy_pickup_tick
+# throttled to $dummy_look_interval ticks, same reasoning/interval as the
+# look-at check above (another per-dummy nearest-entity search) - reused
+# rather than adding a third near-identical interval just for this.
+execute if score $dummy_look_mod scdi_const matches 0 if data storage scdi:config {dummy_pickup_items:1b} run function scdi:dummy_pickup_tick
 
 # expiry sweep for one-off "ONE SHOT" displays (see
 # spawn_dummy_one_shot_display.mcfunction) - runs regardless of
@@ -159,30 +168,37 @@ execute if data storage scdi:config {dummy_pickup_items:1b} run function scdi:du
 # get cleaned up. cheap - there's normally 0-few of these in existence.
 execute as @e[type=minecraft:text_display,tag=scdi_dummy_one_shot_display] run function scdi:apply_expire_one_shot_display
 execute as @e[type=minecraft:text_display,tag=scdi_dummy_tag_display] run function scdi:apply_expire_dummy_tag_display
-execute as @e[type=minecraft:text_display,tag=scdi_dummy_damage_display] run function scdi:apply_expire_dummy_damage_display
+execute as @e[type=minecraft:text_display,tag=scdi_dummy_damage_display] at @s run function scdi:apply_expire_dummy_damage_display
 execute as @e[type=minecraft:text_display,tag=scdi_dummy_cheated_death_display] run function scdi:apply_expire_dummy_cheated_death_display
 
-# Misc: dummy health display (on by default, see load.mcfunction) - every
-# tick, so it reflects damage/heal-back immediately.
-execute if data storage scdi:config {dummy_show_health:1b} run function scdi:dummy_health_display_tick
+# Misc: dummy health display (on by default, see load.mcfunction) -
+# throttled to $dummy_display_interval ticks (default 2, still reads as
+# immediate) rather than every tick - this is the single most expensive
+# unconditional per-dummy chain in this whole file (health/DPS math plus
+# an NBT text-component rewrite on the display entity, per dummy, every
+# tick it ran), and cost scales directly with dummy count.
+execute if score $dummy_display_mod scdi_const matches 0 if data storage scdi:config {dummy_show_health:1b} run function scdi:dummy_health_display_tick
 
 # orphaned dummy-health-display cleanup - same reasoning as the timer
-# display's orphan sweep: a dummy can be removed ([Remove]/[Remove all]/
+# display's orphan sweep (throttled to the same $passive_mod interval,
+# since a stray entity existing a little longer before cleanup is
+# imperceptible): a dummy can be removed ([Remove]/[Remove all]/
 # uninstall) without going through combat_end-style cleanup, which would
 # otherwise leave its health display floating forever.
-execute as @e[type=minecraft:text_display,tag=scdi_dummy_health_display] at @s unless entity @e[type=minecraft:mannequin,tag=scdi_dummy,distance=..3] run kill @s
+execute if score $passive_mod scdi_const matches 0 as @e[type=minecraft:text_display,tag=scdi_dummy_health_display] at @s unless entity @e[type=minecraft:mannequin,tag=scdi_dummy,distance=..3] run kill @s
 
 # Misc: dummy passive health regen (on by default, see load.mcfunction) -
 # throttled to $dummy_regen_interval ticks, unlike the health display above
 # which needs to reflect damage every tick.
 execute if score $dummy_regen_mod scdi_const matches 0 run function scdi:dummy_regen_tick
 
-# Misc: dummy display position tracking - every tick, unconditionally (not
-# gated on any one display setting - a dummy might have several different
-# displays active/expiring at once). needed now that a dummy can actually
-# move (knockback, unless dummy_immobile is on) instead of assuming it's
-# always stationary.
-function scdi:dummy_display_follow_tick
+# Misc: dummy display position tracking - throttled to
+# $dummy_display_interval ticks (default 2, still smooth), not gated on any
+# one display setting (a dummy might have several different displays
+# active/expiring at once). needed now that a dummy can actually move
+# (knockback, unless dummy_immobile is on) instead of assuming it's always
+# stationary. cost scales with dummy count x display count per dummy.
+execute if score $dummy_display_mod scdi_const matches 0 run function scdi:dummy_display_follow_tick
 
 # Misc: pinned dummies (per-dummy toggle, see menu/dummy_menu_pin_on.mcfunction/
 # _off.mcfunction - no global default) get teleported back to their exact

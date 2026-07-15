@@ -19,10 +19,13 @@
 # without an independent gate here, one_shot_ignore_tag had nothing left
 # verifying this was actually the first hit landed on @s, so every kill -
 # any number of hits - announced as a "one shot" once that setting was on.
+execute if data storage scdi:config {debug_hit_messages:1b} run tellraw @a [{"text":"[oneshot-dbg] check_one_shot entered for victim=","color":"gray"},{"selector":"@s"},{"text":" scdi_one_shot_hit=","color":"gray"},{"score":{"name":"@s","objective":"scdi_one_shot_hit"}}]
 execute if score @s scdi_one_shot_hit matches 1 run return 0
 scoreboard players set @s scdi_one_shot_hit 1
 
 execute if data storage scdi:config {announce_one_shot:1b} store result score @s scdi_health run data get entity @s Health 100
+
+execute if data storage scdi:config {debug_hit_messages:1b} run tellraw @a [{"text":"[oneshot-dbg] scdi_health(x100)=","color":"gray"},{"score":{"name":"@s","objective":"scdi_health"}},{"text":" announce_one_shot=","color":"gray"},{"nbt":"announce_one_shot","storage":"scdi:config","interpret":false},{"text":" cooldown_enabled=","color":"gray"},{"nbt":"one_shot_cooldown_enabled","storage":"scdi:config","interpret":false}]
 
 # optional tightening (one_shot_cooldown_enabled, off by default): also
 # require @s to have been out of combat for at least one_shot_cooldown

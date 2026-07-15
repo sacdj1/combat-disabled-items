@@ -20,7 +20,11 @@ scoreboard players set $duration scdi_const 10000
 scoreboard players set $scan_interval scdi_const 1
 scoreboard players set $passive_restore_interval scdi_const 1
 scoreboard players set $proximity_interval scdi_const 1
+scoreboard players set $nullify_interval scdi_const 1
+scoreboard players set $combat_tick_interval scdi_const 1
 scoreboard players set $dummy_regen_interval scdi_const 20
+scoreboard players set $dummy_look_interval scdi_const 2
+scoreboard players set $dummy_display_interval scdi_const 2
 
 data modify storage scdi:config disguise_item set value "minecraft:stick"
 data modify storage scdi:config disguise_model set value "minecraft:barrier"
@@ -52,7 +56,8 @@ data modify storage scdi:config show_tag_title set value 1b
 data modify storage scdi:config show_timer_above_head set value 0b
 data modify storage scdi:config belowname_restore_objective set value ""
 data modify storage scdi:config show_timer_text_display set value 1b
-data modify storage scdi:config scan_inventory set value 1b
+data modify storage scdi:config scan_hotbar set value 1b
+data modify storage scdi:config scan_extended_inventory set value 1b
 data modify storage scdi:config disable_firework_rocket set value 1b
 data modify storage scdi:config disable_wind_charge set value 0b
 data modify storage scdi:config disable_elytra set value 0b

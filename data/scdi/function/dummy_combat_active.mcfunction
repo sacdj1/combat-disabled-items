@@ -7,7 +7,9 @@
 # silently never match on a dummy. everything else - elytra (equipment.chest),
 # offhand, and all 4 custom-item armor slots - works the same as it would
 # for a real player, since those already read/write via equipment.<slot>.
-function scdi:nullify_check
+# throttled to $nullify_interval ticks, same as the real-player path in
+# combat_active.mcfunction.
+execute if score $nullify_mod scdi_const matches 0 run function scdi:nullify_check
 function scdi:check_disguise_armor_flash
 
 # self-extinguish while in combat (per-dummy toggle, off by default for

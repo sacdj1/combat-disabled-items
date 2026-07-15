@@ -53,6 +53,17 @@ execute store result entity @s Health float 1 run attribute @s minecraft:max_hea
 execute store result score @s scdi_dummy_invincible_floor run attribute @s minecraft:max_health get
 scoreboard players remove @s scdi_dummy_invincible_floor 20
 
+# re-sync the tracked health scores to match the heal above - without this,
+# apply_check_dummy_hit.mcfunction's damage-delta math for the NEXT hit
+# would subtract from the STALE pre-heal value instead of the real current
+# (now full) health, silently underreporting that hit's damage by however
+# much was just healed back (sometimes even negative, which failed the
+# "matches 1.." check entirely and dropped the hit from DPS/total-damage
+# tracking altogether) - this was why DPS read low/wrong specifically
+# against invincible dummies once cheating death started firing routinely.
+execute store result score @s scdi_dummy_health_fine run data get entity @s Health 10
+execute store result score @s scdi_health run data get entity @s Health 1
+
 # self-extinguish on cheating death (per-dummy toggle, off by default for
 # newly spawned dummies - see load.mcfunction's dummy_extinguish_on_cheat_death
 # comment)

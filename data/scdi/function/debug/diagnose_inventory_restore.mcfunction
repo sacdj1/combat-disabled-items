@@ -14,8 +14,8 @@ function scdi:nullify_hotbar_slot {slot:9,slot_arg:"inventory.0",orig:"minecraft
 tellraw @s [{"text":"[inv-restore] inventory.0 id after nullify = ","color":"gray"},{"nbt":"Inventory[{Slot:9b}].id","entity":"@s","interpret":false}]
 tellraw @s [{"text":"[inv-restore] inventory.0 custom_data after nullify = ","color":"gray"},{"nbt":"Inventory[{Slot:9b}].components.\"minecraft:custom_data\"","entity":"@s","interpret":false}]
 
-tellraw @s {"text":"[inv-restore] STEP 2: check_restore_hotbar_slot (exact same call restore_inventory.mcfunction makes for this slot)","color":"yellow"}
+tellraw @s {"text":"[inv-restore] STEP 2: check_restore_hotbar_slot (exact same call restore_extended_inventory.mcfunction makes for this slot)","color":"yellow"}
 function scdi:check_restore_hotbar_slot {slot:9,slot_arg:"inventory.0"}
 tellraw @s [{"text":"[inv-restore] inventory.0 id after restore = ","color":"gray"},{"nbt":"Inventory[{Slot:9b}].id","entity":"@s","interpret":false}]
 
-tellraw @s {"text":"[inv-restore] DONE - if STEP 2's id is back to minecraft:elytra, the generic inventory-slot restore path works fine and the real-world bug is elsewhere (e.g. scan_inventory being off, or restore_check never actually running). If it's still the disguise item, the generic fallback branch itself is broken.","color":"green"}
+tellraw @s {"text":"[inv-restore] DONE - if STEP 2's id is back to minecraft:elytra, the generic inventory-slot restore path works fine and the real-world bug is elsewhere (e.g. scan_extended_inventory being off, or restore_check never actually running). If it's still the disguise item, the generic fallback branch itself is broken.","color":"green"}

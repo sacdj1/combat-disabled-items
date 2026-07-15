@@ -1,4 +1,7 @@
-function scdi:nullify_check
+# throttled to $nullify_interval ticks (default 1 = every tick, see
+# load.mcfunction for the tradeoff of raising it) - this is the actual
+# mainhand/offhand/armor disguise check, the core of what this pack does.
+execute if score $nullify_mod scdi_const matches 0 run function scdi:nullify_check
 function scdi:check_disguise_armor_flash
 
 # remaining seconds = ceil((duration_ms - elapsed_ms) / 1000), for the

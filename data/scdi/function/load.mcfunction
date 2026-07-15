@@ -571,14 +571,26 @@ execute unless data storage scdi:config belowname_restore_objective run data mod
 #   /data modify storage scdi:config show_timer_text_display set value 0b   (off)
 execute unless data storage scdi:config show_timer_text_display run data modify storage scdi:config show_timer_text_display set value 1b
 
-# extra safety: also disguise/restore any firework rockets sitting anywhere in
-# your ENTIRE inventory (slots 0-35, not just the hotbar), not just whichever
-# one is actively held - so moving a nulled item around your own inventory
-# never lets it slip through untracked. on by default. change any time,
+# extra safety: also disguise/restore any firework rockets/wind charges/
+# elytra/disguised-anything sitting anywhere in the hotbar (slots 0-8), not
+# just whichever one is actively held - so moving a nulled item around
+# your own hotbar never lets it slip through untracked. separate from
+# scan_extended_inventory below (the rest of the backpack, slots 9-35) -
+# split apart so hotbar coverage (much more likely to matter, since it's
+# where actively-used items - including whatever just got swapped out of
+# an armor slot - tend to end up mid-fight) can stay on independently of
+# the deeper backpack, e.g. to isolate which one's actually costing
+# performance. on by default. change any time, survives reloads:
+#   /data modify storage scdi:config scan_hotbar set value 1b   (on, default)
+#   /data modify storage scdi:config scan_hotbar set value 0b   (off)
+execute unless data storage scdi:config scan_hotbar run data modify storage scdi:config scan_hotbar set value 1b
+
+# same idea as scan_hotbar above, for the rest of the backpack (slots
+# 9-35, everything below the hotbar). on by default. change any time,
 # survives reloads:
-#   /data modify storage scdi:config scan_inventory set value 1b   (on, default)
-#   /data modify storage scdi:config scan_inventory set value 0b   (off)
-execute unless data storage scdi:config scan_inventory run data modify storage scdi:config scan_inventory set value 1b
+#   /data modify storage scdi:config scan_extended_inventory set value 1b   (on, default)
+#   /data modify storage scdi:config scan_extended_inventory set value 0b   (off)
+execute unless data storage scdi:config scan_extended_inventory run data modify storage scdi:config scan_extended_inventory set value 1b
 
 # whether firework rockets get disguised/disabled while tagged - this is the
 # core point of the pack, so it's on by default, but can be turned off (e.g.
@@ -671,17 +683,40 @@ execute unless data storage scdi:config debug_custom_items run data modify stora
 execute unless data storage scdi:config debug_hit_messages run data modify storage scdi:config debug_hit_messages set value 0b
 
 # how often (in ticks, 20 = 1 second) each expensive periodic check runs -
-# each one independently configurable. the core held-item disguise check
-# (mainhand/offhand for firework rockets/wind charges/elytra) always runs
-# every tick regardless of any of these - only the heavier stuff below
-# respects them. default for all three: 1 (every tick, same as before these
-# settings existed). change any time, survives reloads:
+# each one independently configurable. default for all four: 1 (every tick,
+# same as before these settings existed). change any time, survives reloads:
 #   /scoreboard players set $scan_interval scdi_const <ticks>              (full-inventory + custom item scanning)
 #   /scoreboard players set $passive_restore_interval scdi_const <ticks>   (passive restore safety net)
 #   /scoreboard players set $proximity_interval scdi_const <ticks>         (proximity tagging)
+#   /scoreboard players set $nullify_interval scdi_const <ticks>           (mainhand/offhand/armor disguise check)
 execute unless score $scan_interval scdi_const matches -2147483648..2147483647 run scoreboard players set $scan_interval scdi_const 1
 execute unless score $passive_restore_interval scdi_const matches -2147483648..2147483647 run scoreboard players set $passive_restore_interval scdi_const 1
 execute unless score $proximity_interval scdi_const matches -2147483648..2147483647 run scoreboard players set $proximity_interval scdi_const 1
+# raising this above 1 means a tagged player's firework rocket/wind
+# charge/worn elytra/custom item can stay REAL (not yet disguised) for up
+# to this many ticks after being tagged or after switching to it - a
+# genuine security/performance tradeoff, unlike the other three intervals
+# above which only affect secondary safety nets, not the core lock itself.
+# only raise this on a server that's actually struggling with per-tick
+# cost from many simultaneously-tagged players; leave at 1 otherwise.
+execute unless score $nullify_interval scdi_const matches -2147483648..2147483647 run scoreboard players set $nullify_interval scdi_const 1
+
+# how often (in ticks) each tagged player/dummy's real-time combat-lock
+# stopwatch gets QUERIED (combat_tick.mcfunction/dummy_combat_tick.mcfunction) -
+# not the same as restarting it on a hit (retag_resets_timer), which always
+# happens immediately regardless of this setting. "stopwatch" is a
+# third-party mod command, not vanilla - its per-call cost isn't something
+# this pack can inspect or control directly, but querying it 20x/second per
+# tagged entity when the countdown it drives only visually changes once a
+# second is more often than it needs to be. two tradeoffs from raising this
+# above 1: the "(Tagged!)" flash in the first second after being tagged
+# gets choppier (it reads the same elapsed-time snapshot for however many
+# ticks pass between queries), and combat can end up to (interval-1) ticks
+# later than the exact real-time deadline - both negligible at small values,
+# noticeable if pushed high. default 1 (every tick, unchanged from before
+# this setting existed). change any time, survives reloads:
+#   /scoreboard players set $combat_tick_interval scdi_const <ticks>
+execute unless score $combat_tick_interval scdi_const matches -2147483648..2147483647 run scoreboard players set $combat_tick_interval scdi_const 1
 
 # how often (in ticks) the dummy passive-regen check runs - see
 # dummy_regen_tick.mcfunction. default 20 (once a second) - cheap either
@@ -689,6 +724,22 @@ execute unless score $proximity_interval scdi_const matches -2147483648..2147483
 # reloads:
 #   /scoreboard players set $dummy_regen_interval scdi_const <ticks>
 execute unless score $dummy_regen_interval scdi_const matches -2147483648..2147483647 run scoreboard players set $dummy_regen_interval scdi_const 20
+
+# how often (in ticks) each dummy's look-at-player rotation
+# (apply_dummy_look_tick.mcfunction) and floating-display position tracking
+# (apply_dummy_display_follow_tick.mcfunction) run - both cost scales with
+# how many dummies exist at once (a nearest-player search PLUS a facing-angle
+# recompute per dummy for the look check, a position re-teleport per display
+# per dummy for the follow check), and neither needs true every-tick
+# precision to look smooth - a head turning or a floating number trailing
+# by up to 0.1s at default is imperceptible. default 2 (10/sec, still
+# smooth) rather than 1 (20/sec) - cuts that per-dummy cost roughly in half
+# with many dummies spawned at once, at essentially no visible cost. change
+# any time, survives reloads:
+#   /scoreboard players set $dummy_look_interval scdi_const <ticks>
+#   /scoreboard players set $dummy_display_interval scdi_const <ticks>
+execute unless score $dummy_look_interval scdi_const matches -2147483648..2147483647 run scoreboard players set $dummy_look_interval scdi_const 2
+execute unless score $dummy_display_interval scdi_const matches -2147483648..2147483647 run scoreboard players set $dummy_display_interval scdi_const 2
 
 # team-based exemption for proximity tagging (see check_proximity.mcfunction):
 # players sharing the same non-zero scdi_team score never proximity-tag
@@ -728,7 +779,7 @@ execute unless data storage scdi:config ignore_creative run data modify storage 
 
 # whether nulled items are actively re-checked/restored EVERY TICK for every
 # player who isn't currently in combat (a continuous safety net, on top of
-# the scan_inventory range it uses). on by default, but this runs for every
+# whichever of scan_hotbar/scan_extended_inventory are on). on by default, but this runs for every
 # online player every tick regardless of whether they were ever in combat,
 # so it's the more expensive of the two settings - on a busy server with a
 # lot of players you may notice it. turning it off does NOT stop items from

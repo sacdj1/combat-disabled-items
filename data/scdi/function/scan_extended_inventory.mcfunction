@@ -1,18 +1,8 @@
-# full player inventory is slots 0-35 (0-8 hotbar, 9-35 main storage) -
-# covers a nulled item no matter where within your own inventory it gets
-# moved to. no real loop construct in mcfunctions, so this is just written out.
-# slot_arg is the /item modify slot-range argument for that raw slot number -
-# hotbar.0-8 covers raw slots 0-8, inventory.0-26 covers raw slots 9-35 (NOT
-# hotbar.9+, which doesn't exist as a valid slot range and silently no-ops).
-function scdi:check_hotbar_slot {slot:0,slot_arg:"hotbar.0"}
-function scdi:check_hotbar_slot {slot:1,slot_arg:"hotbar.1"}
-function scdi:check_hotbar_slot {slot:2,slot_arg:"hotbar.2"}
-function scdi:check_hotbar_slot {slot:3,slot_arg:"hotbar.3"}
-function scdi:check_hotbar_slot {slot:4,slot_arg:"hotbar.4"}
-function scdi:check_hotbar_slot {slot:5,slot_arg:"hotbar.5"}
-function scdi:check_hotbar_slot {slot:6,slot_arg:"hotbar.6"}
-function scdi:check_hotbar_slot {slot:7,slot_arg:"hotbar.7"}
-function scdi:check_hotbar_slot {slot:8,slot_arg:"hotbar.8"}
+# the rest of the backpack - raw slots 9-35, everything below the hotbar.
+# split out from the old combined scan_inventory.mcfunction - see
+# scan_hotbar.mcfunction for why. slot_arg "inventory.0-26" covers raw
+# slots 9-35 (NOT "hotbar.9+", which doesn't exist as a valid slot range
+# and silently no-ops).
 function scdi:check_hotbar_slot {slot:9,slot_arg:"inventory.0"}
 function scdi:check_hotbar_slot {slot:10,slot_arg:"inventory.1"}
 function scdi:check_hotbar_slot {slot:11,slot_arg:"inventory.2"}

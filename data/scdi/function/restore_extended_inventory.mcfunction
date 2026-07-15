@@ -1,12 +1,5 @@
-function scdi:check_restore_hotbar_slot {slot:0,slot_arg:"hotbar.0"}
-function scdi:check_restore_hotbar_slot {slot:1,slot_arg:"hotbar.1"}
-function scdi:check_restore_hotbar_slot {slot:2,slot_arg:"hotbar.2"}
-function scdi:check_restore_hotbar_slot {slot:3,slot_arg:"hotbar.3"}
-function scdi:check_restore_hotbar_slot {slot:4,slot_arg:"hotbar.4"}
-function scdi:check_restore_hotbar_slot {slot:5,slot_arg:"hotbar.5"}
-function scdi:check_restore_hotbar_slot {slot:6,slot_arg:"hotbar.6"}
-function scdi:check_restore_hotbar_slot {slot:7,slot_arg:"hotbar.7"}
-function scdi:check_restore_hotbar_slot {slot:8,slot_arg:"hotbar.8"}
+# the rest of the backpack - raw slots 9-35. split out from the old
+# combined restore_inventory.mcfunction - see restore_hotbar.mcfunction.
 function scdi:check_restore_hotbar_slot {slot:9,slot_arg:"inventory.0"}
 function scdi:check_restore_hotbar_slot {slot:10,slot_arg:"inventory.1"}
 function scdi:check_restore_hotbar_slot {slot:11,slot_arg:"inventory.2"}
